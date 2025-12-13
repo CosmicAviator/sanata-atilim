@@ -1,96 +1,74 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 import { motion } from 'framer-motion';
-import { supabase } from '../supabaseClient'; // Veritabanı köprümüz (bir üst klasörde)
 
 const ArticleDetail = () => {
-  const { id } = useParams(); // URL'deki numarayı (ID) yakalar
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [post, setPost] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  // Sayfa açılınca veya ID değişince çalışır
   useEffect(() => {
+    const fetchPost = async () => {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) console.error('Hata:', error);
+      else setPost(data);
+    };
+
     fetchPost();
-    window.scrollTo(0, 0); // Sayfanın en tepesine git
   }, [id]);
 
-  async function fetchPost() {
-    // Veritabanından bu ID'ye sahip olan TEK satırı çek
-    const { data, error } = await supabase
-      .from('posts')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      console.log('Hata:', error);
-    } else {
-      setPost(data);
-    }
-    setLoading(false);
-  }
-
-  if (loading) return <div style={{ color: '#fff', textAlign: 'center', marginTop: '100px' }}>Yükleniyor...</div>;
-  if (!post) return <div style={{ color: '#fff', textAlign: 'center', marginTop: '100px' }}>Yazı bulunamadı.</div>;
+  if (!post) return <div style={{color:'#fff', textAlign:'center', marginTop:'50px'}}>Yükleniyor...</div>;
 
   return (
     <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      style={{ backgroundColor: '#111', minHeight: '100vh', color: '#f0f0e0' }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+      style={{ padding: '0 20px', paddingBottom: '100px', color: '#f0f0e0', maxWidth: '800px', margin: '0 auto' }}
     >
-      
-      {/* GERİ DÖN BUTONU */}
-      <Link to="/" style={{ 
-        position: 'fixed', 
-        top: '30px', 
-        left: '30px', 
-        zIndex: 100, 
-        color: '#fff', 
-        textDecoration: 'none',
-        fontSize: '1.5rem',
-        mixBlendMode: 'difference' 
-      }}>
-        ←
-      </Link>
-
-      {/* KAPAK GÖRSELİ (Veritabanından gelen image_url) */}
-      <div style={{ height: '60vh', position: 'relative', overflow: 'hidden' }}>
-        <img 
-          src={post.image_url} 
-          alt={post.title} 
-          style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.5)' }} 
-        />
-        <div style={{ 
-          position: 'absolute', 
-          bottom: 0, 
-          left: 0, 
-          width: '100%', 
-          height: '150px', 
-          background: 'linear-gradient(to top, #111 0%, transparent 100%)' 
-        }} />
-        
-        {/* BAŞLIK VE KATEGORİ */}
-        <div style={{ position: 'absolute', bottom: '50px', left: '0', right: '0', textAlign: 'center', padding: '0 20px' }}>
-          <span style={{ fontFamily: 'sans-serif', color: '#d4af37', letterSpacing: '2px', fontSize: '0.9rem', textTransform: 'uppercase' }}>
-            {post.category}
-          </span>
-          <h1 style={{ fontSize: '3rem', fontWeight: '100', margin: '10px 0', textShadow: '0 5px 15px rgba(0,0,0,0.8)' }}>
-            {post.title}
-          </h1>
+      {/* Kapak Görseli */}
+      {post.image_url && (
+        <div style={{ width: '100%', height: '400px', overflow: 'hidden', marginBottom: '40px', borderRadius: '0 0 20px 20px' }}>
+          <img 
+            src={post.image_url} 
+            alt={post.title} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+          />
         </div>
+      )}
+
+      {/* Geri Dön Butonu */}
+      <button 
+        onClick={() => navigate('/')}
+        style={{ background: 'none', border: 'none', color: '#d4af37', cursor: 'pointer', marginBottom: '20px', fontSize: '1.2rem' }}
+      >
+        ← Geri Dön
+      </button>
+
+      <h1 style={{ fontFamily: '"Times New Roman", serif', fontSize: '3rem', marginBottom: '10px' }}>{post.title}</h1>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#888', marginBottom: '40px', borderBottom: '1px solid #333', paddingBottom: '20px' }}>
+        <span>{new Date(post.created_at).toLocaleDateString('tr-TR')}</span>
+        <span style={{ color: '#d4af37' }}>{post.category}</span>
       </div>
 
-      {/* METİN ALANI */}
-      <div style={{ maxWidth: '700px', margin: '0 auto', padding: '50px 20px 100px 20px', fontSize: '1.25rem', lineHeight: '1.8' }}>
-        {/* Veritabanındaki düz metni gösteriyoruz. İleride buraya HTML editör ekleyebiliriz. */}
-        <p style={{ whiteSpace: 'pre-line' }}>
-          {post.content}
-        </p>
-      </div>
-
+      {/* --- İÇERİK (HTML Render) --- */}
+      <div 
+        className="article-content"
+        dangerouslySetInnerHTML={{ __html: post.content }} 
+        style={{ 
+          fontSize: '1.1rem', 
+          lineHeight: '1.8', 
+          fontFamily: 'Georgia, serif' 
+        }}
+      />
+      
     </motion.div>
   );
 };

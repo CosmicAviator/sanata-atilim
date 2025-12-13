@@ -1,71 +1,83 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '../supabaseClient';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom'; // Tıklama özelliği buradan geliyor
 
-const useColumnCount = () => {
-  const [columns, setColumns] = useState(3);
+const Masonry = ({ category }) => {
+  const [posts, setPosts] = useState([]);
+  const navigate = useNavigate();
+
   useEffect(() => {
-    const updateColumns = () => {
-      if (window.innerWidth < 600) setColumns(1);
-      else if (window.innerWidth < 900) setColumns(2);
-      else setColumns(3);
+    const fetchPosts = async () => {
+      let query = supabase.from('posts').select('*').order('created_at', { ascending: false });
+      if (category !== 'Hepsi') {
+        query = query.eq('category', category);
+      }
+      
+      const { data, error } = await query;
+      if (error) console.error('Hata:', error);
+      else setPosts(data);
     };
-    updateColumns();
-    window.addEventListener('resize', updateColumns);
-    return () => window.removeEventListener('resize', updateColumns);
-  }, []);
-  return columns;
-};
 
-const Masonry = ({ data }) => {
-  const columns = useColumnCount();
-  const columnWrappers = {};
-  for (let i = 0; i < columns; i++) { columnWrappers[`column${i}`] = []; }
+    fetchPosts();
+  }, [category]);
 
-  data.forEach((item, i) => {
-    const columnIndex = i % columns;
-    columnWrappers[`column${columnIndex}`].push(item);
-  });
+  // HTML Etiketlerini Temizleme Fonksiyonu (Sadece metin kalsın)
+  const stripHtml = (html) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  };
 
   return (
-    <div style={{ display: 'flex', gap: '20px', padding: '20px' }}>
-      {Object.keys(columnWrappers).map((columnKey, i) => (
-        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
-          {columnWrappers[columnKey].map((item) => (
-            
-            // İŞTE SİHİR BURADA: Link ile sarmaladık
-            <Link to={`/article/${item.id}`} key={item.id} style={{ textDecoration: 'none' }}>
-              <motion.div
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, type: 'spring' }}
-                whileHover={{ y: -5 }} 
-                style={{
-                  backgroundColor: '#1a1a1a',
-                  borderRadius: '4px',
-                  overflow: 'hidden',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
-                  cursor: 'pointer'
-                }}
-              >
-                <img src={item.image} alt={item.title} style={{ width: '100%', display: 'block', filter: 'grayscale(20%)' }} />
-                <div style={{ padding: '20px' }}>
-                  <span style={{ color: '#d4af37', fontSize: '0.7rem', letterSpacing: '1px', display: 'block', marginBottom: '5px' }}>
-                    {item.category.toUpperCase()}
-                  </span>
-                  <h3 style={{ margin: '5px 0 10px 0', fontWeight: '100', color: '#f0f0e0', fontSize: '1.2rem' }}>
-                    {item.title}
-                  </h3>
-                  <p style={{ fontSize: '0.9rem', color: '#888', margin: 0 }}>
-                    {item.description}
-                  </p>
-                </div>
-              </motion.div>
-            </Link>
+    <div style={{ 
+      columnCount: 3, 
+      columnGap: '20px', 
+      padding: '40px 20px', 
+      maxWidth: '1200px', 
+      margin: '0 auto' 
+    }}>
+      {/* Mobil uyumluluk için stil ayarı */}
+      <style>{`
+        @media (max-width: 900px) { div[style*="column-count: 3"] { column-count: 2 !important; } }
+        @media (max-width: 600px) { div[style*="column-count: 3"] { column-count: 1 !important; } }
+      `}</style>
 
-          ))}
-        </div>
+      {posts.map((post) => (
+        <motion.div
+          key={post.id}
+          whileHover={{ y: -5 }}
+          onClick={() => navigate(`/yazi/${post.id}`)}
+          style={{
+            breakInside: 'avoid',
+            marginBottom: '20px',
+            background: '#1a1a1a',
+            borderRadius: '10px',
+            overflow: 'hidden',
+            cursor: 'pointer',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
+          }}
+        >
+          {post.image_url && (
+            <img 
+              src={post.image_url} 
+              alt={post.title} 
+              style={{ width: '100%', display: 'block' }} 
+            />
+          )}
+          <div style={{ padding: '20px' }}>
+            <span style={{ fontSize: '0.8rem', color: '#d4af37', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              {post.category}
+            </span>
+            <h3 style={{ margin: '10px 0', fontSize: '1.5rem', fontFamily: '"Times New Roman", serif', color: '#fff' }}>
+              {post.title}
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: '#bbb', lineHeight: '1.6' }}>
+              {/* HTML'den arındırılmış temiz metnin ilk 120 karakteri */}
+              {stripHtml(post.content).substring(0, 120)}...
+            </p>
+          </div>
+        </motion.div>
       ))}
     </div>
   );

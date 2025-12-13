@@ -13,3 +13,26 @@ body {
   font-family: 'Times New Roman', serif; /* Ana font */
   overflow-x: hidden;
 }
+/* Yazı Okuma Sayfası Stilleri */
+.article-content h1, .article-content h2 {
+  font-family: "Times New Roman", serif;
+  color: #d4af37;
+  margin-top: 30px;
+}
+
+.article-content blockquote {
+  border-left: 4px solid #d4af37;
+  padding-left: 20px;
+  font-style: italic;
+  color: #ccc;
+  margin: 20px 0;
+}
+
+.article-content ul, .article-content ol {
+  margin-left: 20px;
+  margin-bottom: 20px;
+}
+
+.article-content p {
+  margin-bottom: 20px;
+}
