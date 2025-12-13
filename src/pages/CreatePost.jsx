@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+// Yeni, hafif ve sağlam editörümüz:
+import { Editor, EditorProvider } from 'react-simple-wysiwyg';
 
 const CreatePost = () => {
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(''); // HTML içeriği burada
   const [imageUrl, setImageUrl] = useState('');
   const [category, setCategory] = useState('Sinema');
   const [loading, setLoading] = useState(false);
@@ -15,15 +17,9 @@ const CreatePost = () => {
     e.preventDefault();
     setLoading(true);
 
-    // İçeriği satır başlarına göre paragraflara böl (<p> etiketi ekle)
-    // Bu sayede düz yazsan bile okurken paragraf paragraf ayrılacak.
-    const formattedContent = content.split('\n').map(para => 
-      para.trim() ? `<p>${para}</p>` : '<br>'
-    ).join('');
-
     const { error } = await supabase
       .from('posts')
-      .insert([{ title, content: formattedContent, image_url: imageUrl, category }]);
+      .insert([{ title, content, image_url: imageUrl, category }]);
 
     if (error) {
       alert('Hata: ' + error.message);
@@ -33,6 +29,11 @@ const CreatePost = () => {
     setLoading(false);
   };
 
+  // Editördeki değişiklikleri yakalayan fonksiyon
+  function onChange(e) {
+    setContent(e.target.value);
+  }
+
   return (
     <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto', color: '#f0f0e0', minHeight: '100vh' }}>
       <motion.h2 
@@ -40,7 +41,7 @@ const CreatePost = () => {
         animate={{ opacity: 1 }}
         style={{ fontFamily: '"Times New Roman", serif', borderBottom: '1px solid #d4af37', paddingBottom: '10px' }}
       >
-        Yeni Makale Yaz (Güvenli Mod)
+        Yeni Makale Yaz
       </motion.h2>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '30px' }}>
@@ -72,23 +73,17 @@ const CreatePost = () => {
           style={{ padding: '15px', background: '#1a1a1a', border: '1px solid #333', color: '#fff' }}
         />
 
-        {/* Eski usül ama sağlam Textarea */}
-        <textarea
-          placeholder="Yazını buraya yapıştır..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          required
-          style={{
-            padding: '15px',
-            background: '#fff',
-            color: '#000',
-            minHeight: '400px',
-            fontFamily: 'Georgia, serif',
-            fontSize: '1rem',
-            border: 'none',
-            borderRadius: '5px'
-          }}
-        />
+        {/* --- SAĞLAM EDİTÖR --- */}
+        <div style={{ background: '#fff', color: '#000', borderRadius: '5px', overflow: 'hidden', minHeight:'300px' }}>
+          <EditorProvider>
+            <Editor 
+              value={content} 
+              onChange={onChange}
+              style={{ minHeight: '300px', width: '100%' }}
+              containerProps={{ style: { minHeight: '300px' } }}
+            />
+          </EditorProvider>
+        </div>
 
         <button
           disabled={loading}
