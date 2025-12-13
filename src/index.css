@@ -1,0 +1,15 @@
+:root {
+  /* Renk Paletimiz */
+  --bg-color: #111111;       /* Derin Siyah/Gri */
+  --text-color: #f0f0e0;     /* Fildişi */
+  --accent-color: #d4af37;   /* Antik Altın */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Times New Roman', serif; /* Ana font */
+  overflow-x: hidden;
+}
