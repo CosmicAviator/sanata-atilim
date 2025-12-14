@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient'; // ✅ Düzeltme: supabaseClient yerine lib/supabase
+import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -129,16 +129,18 @@ const Masonry = ({ category }) => {
   // Ana Masonry Grid
   return (
     <>
-      {/* Responsive CSS */}
+      {/* Responsive CSS - Mobil cihazlarda sütun sayısını ayarlar */}
       <style>{`
         @media (max-width: 900px) { 
-          .masonry-container { column-count: 2 !important; } 
+          /* 900px altında 2 sütun */
+          .masonry-container { column-count: 2 !important; column-gap: 15px !important; } 
         }
         @media (max-width: 600px) { 
-          .masonry-container { column-count: 1 !important; } 
+          /* 600px altında 1 sütun (Tam mobil uyum) */
+          .masonry-container { column-count: 1 !important; column-gap: 0 !important; } 
         }
 
-        /* Görsel geçiş animasyonu */
+        /* Görsel ve Kart Animasyon Stilleri */
         .post-image {
           transition: transform 0.3s ease, filter 0.3s ease;
         }
@@ -146,11 +148,10 @@ const Masonry = ({ category }) => {
           transform: scale(1.05);
           filter: brightness(1.1);
         }
-
-        /* Kart gölge efekti */
         .post-card {
           transition: box-shadow 0.3s ease, transform 0.3s ease;
         }
+        /* Elegans için altın vurgulu gölge */
         .post-card:hover {
           box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4) !important;
         }
@@ -161,7 +162,8 @@ const Masonry = ({ category }) => {
         style={{ 
           columnCount: 3, 
           columnGap: '20px', 
-          padding: '40px 20px', 
+          // 🔥 DÜZELTME: Sabit padding kaldırıldı
+          // Ana sayfa padding'i App.jsx'te kontrol edildiği için burada sadece genişlik ayarlanıyor
           maxWidth: '1200px', 
           margin: '0 auto' 
         }}

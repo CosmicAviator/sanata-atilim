@@ -20,6 +20,9 @@ const Hero = () => {
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // 🔥 MOBİL UYUM HESAPLAMASI
+  const isMobile = window.innerWidth < 768;
+
   // --- ESER ÇEKME FONKSİYONU ---
   const fetchValidArt = async (retryCount = 0) => {
     // 5 kere denedik hala bulamadıysak yedeği göster
@@ -99,7 +102,6 @@ const Hero = () => {
     }}>
       
       {/* --- ARKA PLAN RESMİ --- */}
-      {/* Framer motion yerine düz img kullanıyoruz ki yükleme sorunu olmasın */}
       <img 
         src={activeArt.image} 
         alt={activeArt.title} 
@@ -110,10 +112,9 @@ const Hero = () => {
           width: '100%', 
           height: '100%', 
           objectFit: 'cover', 
-          zIndex: 0, // En arkada
+          zIndex: 0, 
           filter: 'brightness(0.4) contrast(1.1)' 
         }}
-        // Eğer resim yüklenirken hata verirse (kırık link), anında yedeğe dön
         onError={(e) => { 
           e.target.onerror = null; 
           e.target.src = fallbackArt.image; 
@@ -128,7 +129,8 @@ const Hero = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           style={{ 
-            fontSize: '4rem', 
+            // 🔥 DÜZELTME: Mobil başlık küçültüldü
+            fontSize: isMobile ? '2.5rem' : '4rem', 
             margin: '0 0 20px 0', 
             fontFamily: '"Times New Roman", serif', 
             fontWeight: '100',
@@ -147,7 +149,14 @@ const Hero = () => {
              <p style={{ color: '#888', fontStyle: 'italic', fontSize: '0.9rem' }}>Küratör eser seçiyor...</p>
           ) : (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }}>
-              <p style={{ fontSize: '1.5rem', fontStyle: 'italic', fontFamily: '"Times New Roman", serif', color: '#ccc', marginBottom: '15px' }}>
+              <p style={{ 
+                // 🔥 DÜZELTME: Mobil alıntı küçültüldü
+                fontSize: isMobile ? '1.2rem' : '1.5rem', 
+                fontStyle: 'italic', 
+                fontFamily: '"Times New Roman", serif', 
+                color: '#ccc', 
+                marginBottom: '15px' 
+              }}>
                 "{activeQuote.content}"
               </p>
               <span style={{ fontSize: '0.9rem', letterSpacing: '2px', color: '#d4af37', textTransform: 'uppercase' }}>
@@ -164,7 +173,15 @@ const Hero = () => {
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           transition={{ delay: 0.5 }}
-          style={{ position: 'absolute', bottom: '30px', right: '40px', textAlign: 'right', opacity: 0.8, zIndex: 10 }}
+          style={{ 
+            position: 'absolute', 
+            // 🔥 DÜZELTME: Mobil cihazda daha az kenar boşluğu ve daha yukarıda
+            bottom: isMobile ? '20px' : '30px', 
+            right: isMobile ? '20px' : '40px', 
+            textAlign: 'right', 
+            opacity: 0.8, 
+            zIndex: 10 
+          }}
         >
           <p style={{ fontSize: '0.9rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', margin: 0, fontWeight: 'bold', textShadow: '0 2px 4px #000' }}>
             {activeArt.title}

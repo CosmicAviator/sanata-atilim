@@ -3,12 +3,39 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { motion } from 'framer-motion';
 
+// 🔥 GÜVENLİK İÇİN DOMPURIFY İMPORT EDİLDİ
+import DOMPurify from 'dompurify'; 
+
+// Güvenli HTML Temizleme Fonksiyonu
+const cleanHtml = (html) => {
+  if (!html) return { __html: '' };
+  
+  // XSS saldırılarını engellerken, gömme (iframe) ve metin formatlama etiketlerine izin verir.
+  return { 
+      __html: DOMPurify.sanitize(html, { 
+          ALLOWED_TAGS: [
+              'p', 'h1', 'h2', 'h3', 'h4', 'blockquote', 'a', 'br', 'ul', 'ol', 'li', 
+              'b', 'i', 'u', 'iframe', 'img', 'div', 'span', 'em', 'strong'
+          ],
+          // Harici içerik (Spotify/Youtube) için iframe'e izin ver ve gerekli nitelikleri koru
+          ADD_TAGS: ['iframe'], 
+          ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'src', 'width', 'height', 'style', 'class']
+      })
+  };
+};
+
+
 const ArticleDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // MOBİL UYUM HESAPLAMALARI
+  const isMobile = window.innerWidth < 768;
+  const contentWidth = isMobile ? '95%' : '900px'; 
+  const horizontalPadding = isMobile ? '0 20px' : '40px 40px'; 
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -108,9 +135,9 @@ const ArticleDetail = () => {
     <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
       {/* Geri Dönüş ve Kategori */}
       <div style={{
-        maxWidth: '900px',
+        maxWidth: contentWidth, 
         margin: '0 auto',
-        padding: '40px 40px 20px'
+        padding: isMobile ? '40px 20px 20px' : '40px 40px 20px'
       }}>
         <div style={{
           display: 'flex',
@@ -158,7 +185,7 @@ const ArticleDetail = () => {
           transition={{ duration: 0.8 }}
           style={{
             width: '100%',
-            maxHeight: '60vh',
+            maxHeight: isMobile ? '40vh' : '60vh', 
             overflow: 'hidden',
             marginBottom: '60px'
           }}
@@ -182,15 +209,15 @@ const ArticleDetail = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         style={{
-          maxWidth: '800px',
+          maxWidth: '800px', 
           margin: '0 auto',
-          padding: '0 40px 100px',
+          padding: isMobile ? '0 20px 100px' : '0 40px 100px', 
           color: '#f0f0e0'
         }}
       >
         {/* Başlık */}
         <h1 style={{
-          fontSize: '3rem',
+          fontSize: isMobile ? '2.2rem' : '3rem', 
           fontFamily: '"Times New Roman", serif',
           fontWeight: '300',
           lineHeight: '1.2',
@@ -224,15 +251,18 @@ const ArticleDetail = () => {
           })}
         </p>
 
-        {/* İçerik (HTML) */}
+        {/* 🔥 GÜVENLİ İÇERİK YANSITMA (DOMPURIFY İLE) 🔥 */}
         <div
           style={{
             fontSize: '1.1rem',
             lineHeight: '1.8',
             fontFamily: 'Georgia, serif',
-            color: '#f0f0e0'
+            color: '#f0f0e0',
+            overflowWrap: 'break-word',
+            wordWrap: 'break-word'
           }}
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          // GÜVENLİK BURADA SAĞLANIYOR!
+          dangerouslySetInnerHTML={cleanHtml(post.content)} 
         />
 
         {/* Alt Bölüm: Geri Dön */}

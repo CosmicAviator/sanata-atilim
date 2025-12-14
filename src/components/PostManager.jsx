@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient'; // ✅ Düzeltme: supabaseClient yerine lib/supabase
+import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PostManager = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // ✅ İki aşamalı silme onayı
-  const [deleting, setDeleting] = useState(null); // Hangi post siliniyor
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+
+  // 🔥 MOBİL UYUM HESAPLAMASI
+  const isMobile = window.innerWidth < 768;
 
   useEffect(() => {
     fetchPosts();
@@ -21,7 +24,7 @@ const PostManager = () => {
     try {
       const { data, error } = await supabase
         .from('posts')
-        .select('id, title, category, created_at, image_url') // ✅ image_url eklendi
+        .select('id, title, category, created_at, image_url')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -36,7 +39,7 @@ const PostManager = () => {
     }
   }
 
-  // ✅ İYİLEŞTİRİLMİŞ: Yazı silme (görsel dahil)
+  // Yazı silme (görsel dahil)
   const handleDelete = async (postId, title) => {
     setDeleting(postId);
 
@@ -50,7 +53,8 @@ const PostManager = () => {
           // URL'den dosya yolunu çıkar
           const urlParts = post.image_url.split('/');
           const fileName = urlParts[urlParts.length - 1];
-          const filePath = `blog-images/${fileName}`;
+          // blog-images/klasörü altındaki dosya yolunu al
+          const filePath = `blog-images/${fileName}`; 
 
           console.log('🗑️ Görsel siliniyor:', filePath);
 
@@ -60,13 +64,11 @@ const PostManager = () => {
 
           if (storageError) {
             console.warn('⚠️ Görsel silinemedi:', storageError.message);
-            // Storage hatası critical değil, devam et
           } else {
             console.log('✅ Görsel silindi');
           }
         } catch (storageErr) {
           console.warn('⚠️ Storage silme hatası:', storageErr.message);
-          // Devam et
         }
       }
 
@@ -85,9 +87,6 @@ const PostManager = () => {
       setDeleteConfirm(null);
       
       console.log('✅ Yazı başarıyla silindi');
-
-      // Başarı bildirimi (opsiyonel)
-      // alert(`"${title}" başlıklı yazı başarıyla silindi.`);
 
     } catch (err) {
       console.error('❌ Silme hatası:', err);
@@ -174,7 +173,10 @@ const PostManager = () => {
         color: '#d4af37',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        // 🔥 MOBİL DÜZELTME: Başlık ve buton mobilde alt alta yığılabilir
+        flexDirection: isMobile ? 'column' : 'row',
+        textAlign: isMobile ? 'center' : 'left'
       }}>
         <span>📚 Tüm Yazılar ({posts.length})</span>
         
@@ -190,7 +192,8 @@ const PostManager = () => {
             cursor: 'pointer',
             fontSize: '0.9rem',
             fontWeight: 'normal',
-            transition: 'all 0.3s'
+            transition: 'all 0.3s',
+            marginTop: isMobile ? '15px' : '0' // Mobil boşluk
           }}
           onMouseOver={(e) => {
             e.target.style.background = '#d4af37';
@@ -205,7 +208,7 @@ const PostManager = () => {
         </button>
       </h3>
 
-      {/* Boş durum */}
+      {/* Boş durum aynı kaldı */}
       {posts.length === 0 ? (
         <div style={{
           textAlign: 'center',
@@ -237,8 +240,10 @@ const PostManager = () => {
                 transition={{ duration: 0.3 }}
                 style={{
                   display: 'flex',
+                  // 🔥 MOBİL DÜZELTME: Telefonlarda dikey listeleme
+                  flexDirection: isMobile ? 'column' : 'row', 
                   gap: '15px',
-                  alignItems: 'center',
+                  alignItems: isMobile ? 'flex-start' : 'center',
                   padding: '15px',
                   background: '#1a1a1a',
                   borderRadius: '8px',
@@ -258,8 +263,8 @@ const PostManager = () => {
                 {/* Thumbnail (varsa) */}
                 {post.image_url && (
                   <div style={{
-                    width: '80px',
-                    height: '80px',
+                    width: isMobile ? '100%' : '80px', // Mobil cihazda tam genişlik
+                    height: isMobile ? '150px' : '80px',
                     flexShrink: 0,
                     borderRadius: '5px',
                     overflow: 'hidden',
@@ -281,7 +286,12 @@ const PostManager = () => {
                 )}
 
                 {/* İçerik Bilgileri */}
-                <div style={{ flexGrow: 1, minWidth: 0 }}>
+                <div style={{ 
+                  flexGrow: 1, 
+                  minWidth: 0,
+                  // 🔥 MOBİL DÜZELTME: Başlık ve butondan ayırmak için mobil boşluk
+                  marginTop: isMobile ? '10px' : '0' 
+                }}>
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -293,7 +303,7 @@ const PostManager = () => {
                       fontSize: '1.1rem',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
+                      whiteSpace: isMobile ? 'normal' : 'nowrap' // Mobil cihazda sarılabilir
                     }}>
                       {post.title}
                     </strong>
@@ -301,7 +311,9 @@ const PostManager = () => {
                   
                   <div style={{
                     display: 'flex',
-                    gap: '15px',
+                    // 🔥 MOBİL DÜZELTME: Kategoriler mobil cihazda alt alta yığılır
+                    flexDirection: isMobile ? 'column' : 'row', 
+                    gap: '10px',
                     fontSize: '0.85rem'
                   }}>
                     {/* Kategori Badge */}
@@ -310,7 +322,8 @@ const PostManager = () => {
                       background: '#d4af3720',
                       padding: '2px 8px',
                       borderRadius: '3px',
-                      fontWeight: '600'
+                      fontWeight: '600',
+                      width: isMobile ? 'fit-content' : 'auto'
                     }}>
                       {post.category}
                     </span>
@@ -327,7 +340,11 @@ const PostManager = () => {
                 </div>
 
                 {/* Silme Butonu */}
-                <div style={{ flexShrink: 0 }}>
+                <div style={{ 
+                  flexShrink: 0, 
+                  // 🔥 MOBİL DÜZELTME: Buton sağa hizalanır
+                  alignSelf: isMobile ? 'flex-end' : 'center'
+                }}>
                   {deleteConfirm === post.id ? (
                     // İki aşamalı onay
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -406,7 +423,7 @@ const PostManager = () => {
         </ul>
       )}
 
-      {/* İstatistikler (opsiyonel) */}
+      {/* İstatistikler */}
       {posts.length > 0 && (
         <div style={{
           marginTop: '20px',
@@ -415,8 +432,10 @@ const PostManager = () => {
           borderRadius: '8px',
           border: '1px solid #333',
           display: 'flex',
-          gap: '30px',
-          justifyContent: 'center',
+          // 🔥 MOBİL DÜZELTME: Mobil cihazda alt alta yığılır
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? '10px' : '30px',
+          justifyContent: isMobile ? 'flex-start' : 'center',
           fontSize: '0.9rem',
           color: '#888'
         }}>

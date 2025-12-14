@@ -6,7 +6,7 @@ import Hero from './components/Hero.jsx';
 import Masonry from './components/Masonry.jsx';
 import CreatePost from './pages/CreatePost.jsx';
 import AdminAuth from './pages/AdminAuth.jsx';
-import ArticleDetail from './pages/ArticleDetail.jsx'; // ✅ Yeni eklendi
+import ArticleDetail from './pages/ArticleDetail.jsx';
 
 // ✅ Minimal ve Zarif Navigation Bar
 function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
@@ -15,10 +15,15 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');
-    window.location.reload();
+    // Oturum durumunun hemen güncellenmesi için tam sayfa yenileme
+    window.location.reload(); 
   };
 
-  const categories = ['Hepsi', 'Sinema', 'Mitoloji', 'Edebiyat', 'Sanat'];
+  // ✅ GÜNCEL KATEGORİ LİSTESİ
+  const categories = ['Hepsi', 'Sinema', 'Mitoloji', 'Edebiyat', 'Sanat']; 
+
+  // Mobil uyum için responsive padding hesapla
+  const navPadding = window.innerWidth > 768 ? '30px 40px' : '20px 20px';
 
   return (
     <nav style={{
@@ -27,7 +32,7 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
       left: 0,
       right: 0,
       zIndex: 100,
-      padding: '30px 40px',
+      padding: navPadding, 
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
@@ -231,6 +236,7 @@ function App() {
         .order('created_at', { ascending: false });
 
       if (selectedCategory !== 'Hepsi') {
+        // Supabase filtrelemesi
         query = query.eq('category', selectedCategory);
       }
 
@@ -263,6 +269,9 @@ function App() {
     return isAdmin ? children : <Navigate to="/admin/auth" replace />;
   };
 
+  // Mobil uyum için içerik alanı padding'ini hesapla
+  const contentPadding = window.innerWidth > 768 ? '60px 40px' : '40px 20px';
+
   return (
     <Router>
       <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
@@ -285,7 +294,8 @@ function App() {
                 <div style={{ 
                   maxWidth: '1200px', 
                   margin: '0 auto', 
-                  padding: '60px 40px' 
+                  // 🔥 DÜZELTME: Mobil uyumlu padding
+                  padding: contentPadding, 
                 }}>
                   {loading && (
                     <div style={{ 
@@ -375,7 +385,7 @@ function App() {
 
           <Route path="/admin/auth" element={<AdminAuth />} />
 
-          {/* ✅ Yazı Detay Sayfası */}
+          {/* Yazı Detay Sayfası */}
           <Route path="/yazi/:id" element={<ArticleDetail />} />
 
           <Route 

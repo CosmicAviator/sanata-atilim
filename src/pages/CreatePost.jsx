@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import PostManager from '../components/PostManager';
 
-// Yeni, sanatsal kategori listesi
+// EMOJİSİZ ve güncel kategori listesi
 const CATEGORIES = [
   { value: 'Sinema', label: 'Sinema' },
   { value: 'Mitoloji', label: 'Mitoloji' },
@@ -14,7 +14,6 @@ const CATEGORIES = [
 
 const CreatePost = () => {
   const [title, setTitle] = useState('');
-  // Başlangıç kategorisi olarak Sinema varsayalım
   const [category, setCategory] = useState(CATEGORIES[0].value); 
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null); 
@@ -24,7 +23,7 @@ const CreatePost = () => {
   const editorRef = useRef(null);
   const navigate = useNavigate();
 
-  // Toolbar stili (Artık daha sade ve şık)
+  // Toolbar stili
   const toolbarBtnStyle = {
     background: 'none',
     color: '#0a0a0a',
@@ -44,7 +43,6 @@ const CreatePost = () => {
 
   // --- Fonksiyonlar (Aynı Bırakıldı) ---
   const handleImageChange = (e) => {
-    // ... Görsel yükleme ve validasyon mantığı aynı ...
     const file = e.target.files[0];
     if (!file) { setImageFile(null); setImagePreview(null); return; }
     if (file.size > 5 * 1024 * 1024) { setError('Görsel boyutu maksimum 5MB olabilir'); e.target.value = ''; return; }
@@ -59,7 +57,6 @@ const CreatePost = () => {
   };
 
   const validateForm = () => {
-    // ... Validasyon mantığı aynı ...
     if (!title.trim()) { setError('❌ Başlık alanı zorunludur'); return false; }
     if (title.length < 3 || title.length > 200) { setError('❌ Başlık 3-200 karakter arasında olmalıdır'); return false; }
     const content = editorRef.current.innerHTML.trim();
@@ -83,7 +80,6 @@ const CreatePost = () => {
 
       // 1. RESİM YÜKLEME
       if (imageFile) {
-        // ... Supabase görsel yükleme mantığı aynı ...
         try {
             const fileExt = imageFile.name.split('.').pop();
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -125,7 +121,6 @@ const CreatePost = () => {
 
       setSuccess(true);
       
-      // Formu temizle
       setTitle('');
       setCategory(CATEGORIES[0].value);
       setImageFile(null);
@@ -144,7 +139,6 @@ const CreatePost = () => {
   };
 
   const handleClearForm = () => {
-    // ... Temizleme mantığı aynı ...
     if (!window.confirm('🗑️ Formu temizlemek istediğinizden emin misiniz?')) return;
     setTitle('');
     setCategory(CATEGORIES[0].value);
@@ -154,16 +148,19 @@ const CreatePost = () => {
     setSuccess(false);
     editorRef.current.innerHTML = '';
   };
-  // ------------------------------------
+  
+  // MOBİL UYUM İÇİN HESAPLAMALAR
+  const isMobile = window.innerWidth < 768;
+  const mainPadding = isMobile ? '30px 15px' : '60px 20px'; 
 
   return (
     <div style={{ 
-      padding: '60px 20px', 
-      maxWidth: '1000px', // Daha geniş çalışma alanı
+      padding: mainPadding, 
+      maxWidth: '1000px', 
       margin: '0 auto', 
       color: '#f0f0e0', 
       minHeight: '100vh',
-      background: '#0a0a0a' // Arka planı koru
+      background: '#0a0a0a'
     }}>
       
       {/* BAŞLIK */}
@@ -176,7 +173,7 @@ const CreatePost = () => {
           color: '#d4af37', 
           fontFamily: '"Times New Roman", serif', 
           textAlign: 'center',
-          fontSize: '3rem', // Daha vurgulu
+          fontSize: isMobile ? '2.2rem' : '3rem', 
           fontWeight: '300',
           marginBottom: '5px',
           textTransform: 'uppercase',
@@ -198,19 +195,19 @@ const CreatePost = () => {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
         style={{
-            background: '#1a1a1a', // Hafif koyu zemin
-            padding: '50px',
+            background: '#1a1a1a', 
+            padding: isMobile ? '30px' : '50px',
             border: '1px solid #333',
             borderRadius: '5px'
         }}
       >
         <h2 style={{ 
           fontFamily: '"Times New Roman", serif', 
-          fontSize: '2rem',
+          fontSize: isMobile ? '1.5rem' : '2rem',
           fontWeight: '300',
-          color: '#f0f0e0', // Fildişi
+          color: '#f0f0e0', 
           marginBottom: '30px',
-          borderLeft: '4px solid #d4af37', // Sol tarafta ince altın çizgi
+          borderLeft: '4px solid #d4af37', 
           paddingLeft: '15px'
         }}>
           Yeni Eser Oluştur
@@ -222,7 +219,7 @@ const CreatePost = () => {
           gap: '30px' 
         }}>
           
-          {/* BAŞLIK */}
+          {/* BAŞLIK INPUTU */}
           <div>
             <label style={{ 
               display: 'block', 
@@ -243,7 +240,7 @@ const CreatePost = () => {
               style={{ 
                 width: '100%',
                 padding: '12px 15px', 
-                background: '#0a0a0a', // Daha koyu input
+                background: '#0a0a0a', 
                 border: '1px solid #333', 
                 color: '#f0f0e0', 
                 fontSize: '1.2rem',
@@ -260,8 +257,13 @@ const CreatePost = () => {
             </p>
           </div>
 
-          {/* KATEGORİ & GÖRSEL YÜKLEME GRUBU */}
-          <div style={{ display: 'flex', gap: '30px' }}>
+          {/* KATEGORİ & GÖRSEL GRUBU (MOBİLDE ALT ALTA YIĞILIR) */}
+          <div style={{ 
+            display: 'flex', 
+            gap: isMobile ? '20px' : '30px', 
+            flexDirection: isMobile ? 'column' : 'row'
+          }}>
+            
             {/* KATEGORİ */}
             <div style={{ flex: 1 }}>
               <label style={{ 
@@ -287,7 +289,6 @@ const CreatePost = () => {
                   fontFamily: 'sans-serif',
                   borderRadius: '3px',
                   cursor: 'pointer',
-                  // Ok rengini değiştirmek zor olduğu için standart bırakıldı
                 }}
               >
                 {CATEGORIES.map(cat => (
@@ -313,7 +314,7 @@ const CreatePost = () => {
               <div style={{ 
                 background: '#0a0a0a', 
                 padding: '12px', 
-                border: '1px solid #333', // Daha ince çerçeve
+                border: '1px solid #333', 
                 borderRadius: '3px',
                 textAlign: 'center'
               }}>
@@ -348,7 +349,7 @@ const CreatePost = () => {
                   maxWidth: '100%', 
                   maxHeight: '350px',
                   borderRadius: '3px',
-                  border: '1px solid #d4af37', // İnce altın çerçeve
+                  border: '1px solid #d4af37', 
                   objectFit: 'cover'
                 }}
               />
@@ -400,16 +401,15 @@ const CreatePost = () => {
                 ref={editorRef}
                 contentEditable
                 style={{
-                  minHeight: '450px', // Daha fazla çalışma alanı
-                  padding: '30px',
-                  background: '#fff', // Beyaz kağıt hissi
+                  minHeight: '450px', 
+                  padding: isMobile ? '20px' : '30px', 
+                  background: '#fff', 
                   color: '#000',
                   outline: 'none',
                   fontFamily: 'Georgia, serif',
                   fontSize: '1.1rem',
                   lineHeight: '1.8',
                   overflowY: 'auto',
-                  // placeholder özelliği için CSS gerekiyor, inline olmadığı için şimdilik atlıyoruz.
                 }}
               ></div>
             </div>
@@ -438,7 +438,8 @@ const CreatePost = () => {
           <div style={{ 
             display: 'flex', 
             gap: '15px', 
-            marginTop: '20px' 
+            marginTop: '20px',
+            flexDirection: isMobile ? 'column' : 'row'
           }}>
             <button
               type="submit"
@@ -469,9 +470,9 @@ const CreatePost = () => {
               disabled={loading}
               style={{
                 padding: '15px 30px',
-                background: 'none', // Arka plan yok
+                background: 'none', 
                 color: '#888',
-                border: '1px solid #555', // İnce çerçeve
+                border: '1px solid #555', 
                 fontWeight: 'normal',
                 cursor: loading ? 'not-allowed' : 'pointer',
                 fontSize: '0.9rem',
