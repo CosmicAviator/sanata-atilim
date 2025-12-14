@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
-import Navbar from './components/Navbar.jsx'; // ✅ .jsx eklendi
-import Masonry from './components/Masonry.jsx'; // ✅ .jsx eklendi
-import CreatePost from './pages/CreatePost.jsx'; // ✅ .jsx eklendi
-import AdminAuth from './pages/AdminAuth.jsx'; // ✅ .jsx eklendi
+import Hero from './components/Hero.jsx'; // ✅ Hero kullanılıyor
+import Masonry from './components/Masonry.jsx';
+import CreatePost from './pages/CreatePost.jsx';
+import AdminAuth from './pages/AdminAuth.jsx';
 
 function App() {
   const [posts, setPosts] = useState([]);
@@ -72,14 +72,16 @@ function App() {
   return (
     <Router>
       <div className="App min-h-screen bg-gray-50">
-        <Navbar isAdmin={isAdmin} />
+        {/* Hero component navbar görevi görüyor */}
         
         <Routes>
-          {/* Ana Sayfa - Blog Yazıları */}
+          {/* Ana Sayfa - Hero + Blog Yazıları */}
           <Route 
             path="/" 
             element={
-              <div className="container mx-auto px-4 py-8">
+              <>
+                <Hero />
+                <div className="container mx-auto px-4 py-8">
                 <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">
                   Sanata Atılım Blogu
                 </h1>
@@ -114,6 +116,7 @@ function App() {
                   <Masonry items={posts} />
                 )}
               </div>
+              </>
             } 
           />
 
