@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
-import Navbar from './components/Navbar';
-import Masonry from './components/Masonry';
-import CreatePost from './pages/CreatePost';
-import AdminAuth from './pages/AdminAuth';
+import Navbar from './components/Navbar.jsx'; // ✅ .jsx eklendi
+import Masonry from './components/Masonry.jsx'; // ✅ .jsx eklendi
+import CreatePost from './pages/CreatePost.jsx'; // ✅ .jsx eklendi
+import AdminAuth from './pages/AdminAuth.jsx'; // ✅ .jsx eklendi
 
 function App() {
   const [posts, setPosts] = useState([]);
