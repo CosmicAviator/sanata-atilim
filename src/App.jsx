@@ -6,6 +6,7 @@ import Hero from './components/Hero.jsx';
 import Masonry from './components/Masonry.jsx';
 import CreatePost from './pages/CreatePost.jsx';
 import AdminAuth from './pages/AdminAuth.jsx';
+import ArticleDetail from './pages/ArticleDetail.jsx'; // ✅ Yeni eklendi
 
 // ✅ Minimal ve Zarif Navigation Bar
 function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
@@ -46,7 +47,7 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
         >
           <h1 style={{
             margin: 0,
-            fontSize: '1.4rem',
+            fontSize: '1.8rem',
             fontFamily: '"Times New Roman", serif',
             color: '#f0f0e0',
             fontWeight: '300',
@@ -55,7 +56,7 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
           }}>
             SANATA ATILIM<br />
             <span style={{
-              fontSize: '0.7rem',
+              fontSize: '0.85rem',
               letterSpacing: '2px',
               color: '#888',
               textTransform: 'uppercase',
@@ -163,7 +164,7 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
                   background: 'none',
                   border: 'none',
                   color: selectedCategory === cat ? '#d4af37' : '#888',
-                  fontSize: '0.7rem',
+                  fontSize: '0.85rem',
                   letterSpacing: '2px',
                   textTransform: 'uppercase',
                   fontFamily: 'sans-serif',
@@ -373,6 +374,9 @@ function App() {
           />
 
           <Route path="/admin/auth" element={<AdminAuth />} />
+
+          {/* ✅ Yazı Detay Sayfası */}
+          <Route path="/yazi/:id" element={<ArticleDetail />} />
 
           <Route 
             path="/admin/create" 
