@@ -18,7 +18,7 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
     window.location.reload();
   };
 
-  const categories = ['Hepsi', 'Sinema', 'Edebiyat', 'Felsefe'];
+  const categories = ['Hepsi', 'Sinema', 'Mitoloji', 'Edebiyat', 'Sanat'];
 
   return (
     <nav style={{

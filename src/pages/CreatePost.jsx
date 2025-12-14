@@ -1,107 +1,78 @@
 import { useState, useRef } from 'react';
-import { supabase } from '../supabaseClient'; // ✅ Düzeltme: supabaseClient yerine lib/supabase
+import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import PostManager from '../components/PostManager';
 
+// Yeni, sanatsal kategori listesi
+const CATEGORIES = [
+  { value: 'Sinema', label: '🎬 Sinema' },
+  { value: 'Mitoloji', label: '🔱 Mitoloji' },
+  { value: 'Edebiyat', label: '📚 Edebiyat' },
+  { value: 'Sanat', label: '🎨 Sanat' },
+];
+
 const CreatePost = () => {
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('Sinema');
+  // Başlangıç kategorisi olarak Sinema varsayalım
+  const [category, setCategory] = useState(CATEGORIES[0].value); 
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null); // ✅ Yeni: Görsel önizleme
+  const [imagePreview, setImagePreview] = useState(null); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const editorRef = useRef(null);
   const navigate = useNavigate();
 
-  // --- TOOLBAR FONKSİYONLARI ---
+  // Toolbar stili (Artık daha sade ve şık)
+  const toolbarBtnStyle = {
+    background: 'none',
+    color: '#0a0a0a',
+    border: 'none',
+    padding: '6px 10px',
+    cursor: 'pointer',
+    borderRadius: '4px',
+    fontWeight: 'normal',
+    fontSize: '0.9rem',
+    transition: 'all 0.2s',
+  };
+
   const formatDoc = (cmd, value = null) => {
     document.execCommand(cmd, false, value);
     editorRef.current.focus();
   };
 
-  // ✅ YENİ: Görsel seçimi ve önizleme
+  // --- Fonksiyonlar (Aynı Bırakıldı) ---
   const handleImageChange = (e) => {
+    // ... Görsel yükleme ve validasyon mantığı aynı ...
     const file = e.target.files[0];
-    
-    if (!file) {
-      setImageFile(null);
-      setImagePreview(null);
-      return;
-    }
-
-    // Dosya boyutu kontrolü (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Görsel boyutu maksimum 5MB olabilir');
-      e.target.value = ''; // Input'u temizle
-      return;
-    }
-
-    // Dosya formatı kontrolü
+    if (!file) { setImageFile(null); setImagePreview(null); return; }
+    if (file.size > 5 * 1024 * 1024) { setError('Görsel boyutu maksimum 5MB olabilir'); e.target.value = ''; return; }
     const validFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-    if (!validFormats.includes(file.type)) {
-      setError('Sadece JPG, PNG, WebP ve GIF formatları desteklenir');
-      e.target.value = '';
-      return;
-    }
+    if (!validFormats.includes(file.type)) { setError('Sadece JPG, PNG, WebP ve GIF formatları desteklenir'); e.target.value = ''; return; }
 
     setImageFile(file);
     setError(null);
-
-    // Önizleme oluştur
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result);
-    };
+    reader.onloadend = () => { setImagePreview(reader.result); };
     reader.readAsDataURL(file);
   };
 
-  // ✅ YENİ: Form validasyonu
   const validateForm = () => {
-    // Başlık kontrolü
-    if (!title.trim()) {
-      setError('❌ Başlık alanı zorunludur');
-      return false;
-    }
-    if (title.length < 3) {
-      setError('❌ Başlık en az 3 karakter olmalıdır');
-      return false;
-    }
-    if (title.length > 200) {
-      setError('❌ Başlık maksimum 200 karakter olabilir');
-      return false;
-    }
-
-    // İçerik kontrolü
+    // ... Validasyon mantığı aynı ...
+    if (!title.trim()) { setError('❌ Başlık alanı zorunludur'); return false; }
+    if (title.length < 3 || title.length > 200) { setError('❌ Başlık 3-200 karakter arasında olmalıdır'); return false; }
     const content = editorRef.current.innerHTML.trim();
-    if (!content || content === '<br>' || content === '<p><br></p>') {
-      setError('❌ İçerik alanı boş bırakılamaz');
-      return false;
-    }
-    if (content.length < 50) {
-      setError('❌ İçerik çok kısa (minimum 50 karakter)');
-      return false;
-    }
-
-    // Görsel kontrolü (opsiyonel ama önerilir)
-    if (!imageFile) {
-      const confirmed = window.confirm(
-        '⚠️ Kapak görseli seçmediniz. Görselsiz devam etmek istiyor musunuz?'
-      );
-      if (!confirmed) return false;
-    }
-
+    if (!content || content.length < 50) { setError('❌ İçerik çok kısa (minimum 50 karakter) veya boş'); return false; }
+    if (!imageFile && !window.confirm('⚠️ Kapak görseli seçmediniz. Görselsiz devam etmek istiyor musunuz?')) return false;
     return true;
   };
 
-  // ✅ İYİLEŞTİRİLMİŞ: Form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setSuccess(false);
 
-    // Validasyon kontrolü
     if (!validateForm()) return;
 
     setLoading(true);
@@ -110,98 +81,89 @@ const CreatePost = () => {
       const content = editorRef.current.innerHTML;
       let finalImageUrl = '';
 
-      // 1. RESİM YÜKLEME (varsa)
+      // 1. RESİM YÜKLEME
       if (imageFile) {
+        // ... Supabase görsel yükleme mantığı aynı ...
         try {
-          const fileExt = imageFile.name.split('.').pop();
-          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-          const filePath = `blog-images/${fileName}`; // ✅ Düzeltme: Klasör eklendi
+            const fileExt = imageFile.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const filePath = `blog-images/${fileName}`; 
 
-          console.log('📤 Görsel yükleniyor:', fileName);
+            const { error: uploadError } = await supabase.storage
+              .from('blog-images')
+              .upload(filePath, imageFile, {
+                cacheControl: '3600',
+                upsert: false
+              });
 
-          const { error: uploadError } = await supabase.storage
-            .from('blog-images')
-            .upload(filePath, imageFile, {
-              cacheControl: '3600',
-              upsert: false
-            });
+            if (uploadError) throw uploadError;
 
-          if (uploadError) throw uploadError;
+            const { data: { publicUrl } } = supabase.storage
+              .from('blog-images')
+              .getPublicUrl(filePath);
 
-          // Public URL al
-          const { data: { publicUrl } } = supabase.storage
-            .from('blog-images')
-            .getPublicUrl(filePath);
+            finalImageUrl = publicUrl;
 
-          finalImageUrl = publicUrl;
-          console.log('✅ Görsel yüklendi:', publicUrl);
-
-        } catch (uploadErr) {
-          throw new Error(`Görsel yüklenemedi: ${uploadErr.message}`);
-        }
+          } catch (uploadErr) {
+            throw new Error(`Görsel yüklenemedi: ${uploadErr.message}`);
+          }
       }
 
       // 2. VERİTABANINA KAYDETME
-      console.log('💾 Veritabanına kaydediliyor...');
-
-      const { data, error: dbError } = await supabase
+      const { error: dbError } = await supabase
         .from('posts')
         .insert([{
           title: title.trim(),
           content: content,
-          image_url: finalImageUrl || null, // ✅ Boşsa null kaydet
+          image_url: finalImageUrl || null,
           category: category,
           created_at: new Date().toISOString()
         }])
-        .select(); // ✅ Eklenen veriyi geri döndür
+        .select(); 
 
       if (dbError) throw dbError;
 
-      console.log('✅ Yazı başarıyla kaydedildi:', data);
-
-      // Başarı durumu
       setSuccess(true);
       
       // Formu temizle
       setTitle('');
-      setCategory('Sinema');
+      setCategory(CATEGORIES[0].value);
       setImageFile(null);
       setImagePreview(null);
       editorRef.current.innerHTML = '';
 
-      // 3 saniye sonra başarı mesajını kaldır ve sayfayı yenile
       setTimeout(() => {
         window.location.reload();
       }, 2000);
 
     } catch (err) {
-      console.error('❌ Hata:', err);
       setError(err.message || 'Bir hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ YENİ: Formu temizle
   const handleClearForm = () => {
+    // ... Temizleme mantığı aynı ...
     if (!window.confirm('🗑️ Formu temizlemek istediğinizden emin misiniz?')) return;
-    
     setTitle('');
-    setCategory('Sinema');
+    setCategory(CATEGORIES[0].value);
     setImageFile(null);
     setImagePreview(null);
     setError(null);
     setSuccess(false);
     editorRef.current.innerHTML = '';
   };
+  // ------------------------------------
 
   return (
     <div style={{ 
-      padding: '40px 20px', 
-      maxWidth: '900px', 
+      padding: '60px 20px', 
+      maxWidth: '1000px', // Daha geniş çalışma alanı
       margin: '0 auto', 
       color: '#f0f0e0', 
-      minHeight: '100vh' 
+      minHeight: '100vh',
+      background: '#0a0a0a' // Arka planı koru
     }}>
       
       {/* BAŞLIK */}
@@ -214,21 +176,20 @@ const CreatePost = () => {
           color: '#d4af37', 
           fontFamily: '"Times New Roman", serif', 
           textAlign: 'center',
-          fontSize: '2.5rem',
-          marginBottom: '10px',
+          fontSize: '3rem', // Daha vurgulu
+          fontWeight: '300',
+          marginBottom: '5px',
           textTransform: 'uppercase',
-          letterSpacing: '2px'
+          letterSpacing: '3px'
         }}>
-          ✍️ Yazar Kontrol Paneli
+          Yazarın Çalışma Masası
         </h1>
-        <p style={{
-          textAlign: 'center',
-          color: '#bbb',
-          fontSize: '0.9rem',
-          marginBottom: '30px'
-        }}>
-          Yeni içerik oluşturun ve mevcut yazılarınızı yönetin
-        </p>
+        <div style={{
+          width: '80px',
+          height: '1px',
+          background: '#d4af37',
+          margin: '0 auto 50px'
+        }} />
       </motion.div>
 
       {/* FORM */}
@@ -236,47 +197,58 @@ const CreatePost = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
+        style={{
+            background: '#1a1a1a', // Hafif koyu zemin
+            padding: '50px',
+            border: '1px solid #333',
+            borderRadius: '5px'
+        }}
       >
         <h2 style={{ 
           fontFamily: '"Times New Roman", serif', 
-          borderBottom: '2px solid #d4af37', 
-          paddingBottom: '10px', 
+          fontSize: '2rem',
+          fontWeight: '300',
+          color: '#f0f0e0', // Fildişi
           marginBottom: '30px',
-          color: '#d4af37'
+          borderLeft: '4px solid #d4af37', // Sol tarafta ince altın çizgi
+          paddingLeft: '15px'
         }}>
-          📝 Yeni İçerik Oluştur
+          Yeni Eser Oluştur
         </h2>
 
         <form onSubmit={handleSubmit} style={{ 
           display: 'flex', 
           flexDirection: 'column', 
-          gap: '20px' 
+          gap: '30px' 
         }}>
           
           {/* BAŞLIK */}
           <div>
             <label style={{ 
               display: 'block', 
-              marginBottom: '8px', 
+              marginBottom: '10px', 
               color: '#d4af37',
-              fontWeight: 'bold'
+              fontSize: '0.9rem',
+              letterSpacing: '1px',
+              textTransform: 'uppercase'
             }}>
               Başlık <span style={{ color: '#ff6b6b' }}>*</span>
             </label>
             <input
               type="text"
-              placeholder="Yazınızın başlığını girin..."
+              placeholder="Eserinizin başlığını girin..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
               style={{ 
                 width: '100%',
-                padding: '15px', 
-                background: '#1a1a1a', 
+                padding: '12px 15px', 
+                background: '#0a0a0a', // Daha koyu input
                 border: '1px solid #333', 
-                color: '#fff', 
+                color: '#f0f0e0', 
                 fontSize: '1.2rem',
-                borderRadius: '5px',
+                fontFamily: '"Times New Roman", serif',
+                borderRadius: '3px',
                 outline: 'none',
                 transition: 'border 0.3s'
               }}
@@ -288,166 +260,139 @@ const CreatePost = () => {
             </p>
           </div>
 
-          {/* KATEGORİ */}
-          <div>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '8px', 
-              color: '#d4af37',
-              fontWeight: 'bold'
-            }}>
-              Kategori <span style={{ color: '#ff6b6b' }}>*</span>
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              style={{ 
-                width: '100%',
-                padding: '12px', 
-                background: '#1a1a1a', 
-                border: '1px solid #333', 
-                color: '#fff',
-                fontSize: '1rem',
-                borderRadius: '5px',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="Sinema">🎬 Sinema</option>
-              <option value="Edebiyat">📚 Edebiyat</option>
-              <option value="Felsefe">🤔 Felsefe</option>
-            </select>
-          </div>
-
-          {/* GÖRSEL YÜKLEME */}
-          <div>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '8px', 
-              color: '#d4af37',
-              fontWeight: 'bold'
-            }}>
-              Kapak Görseli (Önerilen)
-            </label>
-            <div style={{ 
-              background: '#1a1a1a', 
-              padding: '20px', 
-              border: '2px dashed #d4af37', 
-              borderRadius: '8px',
-              textAlign: 'center'
-            }}>
-              <input
-                type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
-                onChange={handleImageChange}
+          {/* KATEGORİ & GÖRSEL YÜKLEME GRUBU */}
+          <div style={{ display: 'flex', gap: '30px' }}>
+            {/* KATEGORİ */}
+            <div style={{ flex: 1 }}>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '10px', 
+                color: '#d4af37',
+                fontSize: '0.9rem',
+                letterSpacing: '1px',
+                textTransform: 'uppercase'
+              }}>
+                Kategori Seçimi <span style={{ color: '#ff6b6b' }}>*</span>
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
                 style={{ 
                   width: '100%',
-                  color: '#fff',
-                  cursor: 'pointer'
-                }}
-              />
-              <p style={{ 
-                fontSize: '0.85rem', 
-                color: '#bbb', 
-                marginTop: '10px' 
-              }}>
-                Maksimum 5MB • JPG, PNG, WebP, GIF
-              </p>
-            </div>
-
-            {/* GÖRSEL ÖNİZLEME */}
-            {imagePreview && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                style={{ 
-                  marginTop: '15px', 
-                  textAlign: 'center' 
+                  padding: '12px 15px', 
+                  background: '#0a0a0a', 
+                  border: '1px solid #333', 
+                  color: '#f0f0e0',
+                  fontSize: '1rem',
+                  fontFamily: 'sans-serif',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  // Ok rengini değiştirmek zor olduğu için standart bırakıldı
                 }}
               >
-                <p style={{ 
-                  color: '#d4af37', 
-                  marginBottom: '10px',
-                  fontWeight: 'bold'
-                }}>
-                  📸 Önizleme:
-                </p>
-                <img 
-                  src={imagePreview} 
-                  alt="Görsel önizleme" 
-                  style={{ 
-                    maxWidth: '100%', 
-                    maxHeight: '300px',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 15px rgba(212, 175, 55, 0.3)'
-                  }}
+                {CATEGORIES.map(cat => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            {/* GÖRSEL YÜKLEME */}
+            <div style={{ flex: 1.5 }}>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '10px', 
+                color: '#d4af37',
+                fontSize: '0.9rem',
+                letterSpacing: '1px',
+                textTransform: 'uppercase'
+              }}>
+                Kapak Görseli (Önerilen)
+              </label>
+              <div style={{ 
+                background: '#0a0a0a', 
+                padding: '12px', 
+                border: '1px solid #333', // Daha ince çerçeve
+                borderRadius: '3px',
+                textAlign: 'center'
+              }}>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                  onChange={handleImageChange}
+                  style={{ width: '100%', color: '#ccc', cursor: 'pointer' }}
                 />
-              </motion.div>
-            )}
+              </div>
+            </div>
           </div>
+          
+          {/* GÖRSEL ÖNİZLEME */}
+          {imagePreview && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              transition={{ duration: 0.5 }}
+              style={{ 
+                marginTop: '15px', 
+                textAlign: 'center' 
+              }}
+            >
+              <p style={{ color: '#d4af37', marginBottom: '10px' }}>
+                📸 Önizleme
+              </p>
+              <img 
+                src={imagePreview} 
+                alt="Görsel önizleme" 
+                style={{ 
+                  maxWidth: '100%', 
+                  maxHeight: '350px',
+                  borderRadius: '3px',
+                  border: '1px solid #d4af37', // İnce altın çerçeve
+                  objectFit: 'cover'
+                }}
+              />
+            </motion.div>
+          )}
 
           {/* TOOLBAR VE EDITÖR */}
           <div>
             <label style={{ 
               display: 'block', 
-              marginBottom: '8px', 
+              marginBottom: '10px', 
               color: '#d4af37',
-              fontWeight: 'bold'
+              fontSize: '0.9rem',
+              letterSpacing: '1px',
+              textTransform: 'uppercase'
             }}>
-              İçerik <span style={{ color: '#ff6b6b' }}>*</span>
+              İçerik Metni <span style={{ color: '#ff6b6b' }}>*</span>
             </label>
             
             <div style={{ 
               border: '1px solid #333', 
-              borderRadius: '8px', 
+              borderRadius: '3px', 
               overflow: 'hidden',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
             }}>
               
               {/* TOOLBAR */}
               <div style={{ 
                 background: '#d4af37', 
-                padding: '12px', 
+                padding: '8px', 
                 display: 'flex', 
-                gap: '8px', 
+                gap: '4px', 
                 flexWrap: 'wrap',
-                borderBottom: '2px solid #000'
+                borderBottom: '1px solid #0a0a0a'
               }}>
-                <button type="button" onClick={() => formatDoc('bold')} style={btnStyle} title="Kalın">
-                  <b>B</b>
-                </button>
-                <button type="button" onClick={() => formatDoc('italic')} style={btnStyle} title="İtalik">
-                  <i>I</i>
-                </button>
-                <button type="button" onClick={() => formatDoc('underline')} style={btnStyle} title="Altı Çizili">
-                  <u>U</u>
-                </button>
-                <span style={{width:'2px', background:'#000', margin:'0 8px'}}></span>
-                <button type="button" onClick={() => formatDoc('formatBlock', 'h2')} style={btnStyle} title="Başlık">
-                  H2
-                </button>
-                <button type="button" onClick={() => formatDoc('formatBlock', 'h3')} style={btnStyle} title="Alt Başlık">
-                  H3
-                </button>
-                <button type="button" onClick={() => formatDoc('formatBlock', 'p')} style={btnStyle} title="Paragraf">
-                  P
-                </button>
-                <span style={{width:'2px', background:'#000', margin:'0 8px'}}></span>
-                <button type="button" onClick={() => formatDoc('insertUnorderedList')} style={btnStyle} title="Madde Listesi">
-                  • Liste
-                </button>
-                <button type="button" onClick={() => formatDoc('formatBlock', 'blockquote')} style={btnStyle} title="Alıntı">
-                  ❝ Alıntı
-                </button>
-                <span style={{width:'2px', background:'#000', margin:'0 8px'}}></span>
-                <button type="button" onClick={() => formatDoc('justifyLeft')} style={btnStyle} title="Sola Hizala">
-                  ⬅
-                </button>
-                <button type="button" onClick={() => formatDoc('justifyCenter')} style={btnStyle} title="Ortala">
-                  ↔
-                </button>
-                <button type="button" onClick={() => formatDoc('justifyRight')} style={btnStyle} title="Sağa Hizala">
-                  ➡
-                </button>
+                <button type="button" onClick={() => formatDoc('bold')} style={toolbarBtnStyle} onMouseOver={(e) => e.target.style.background = '#c29d2f'} onMouseOut={(e) => e.target.style.background = 'none'} title="Kalın"><b>B</b></button>
+                <button type="button" onClick={() => formatDoc('italic')} style={toolbarBtnStyle} onMouseOver={(e) => e.target.style.background = '#c29d2f'} onMouseOut={(e) => e.target.style.background = 'none'} title="İtalik"><i>I</i></button>
+                <button type="button" onClick={() => formatDoc('underline')} style={toolbarBtnStyle} onMouseOver={(e) => e.target.style.background = '#c29d2f'} onMouseOut={(e) => e.target.style.background = 'none'} title="Altı Çizili"><u>U</u></button>
+                <span style={{width:'1px', background:'#0a0a0a', margin:'0 8px'}}></span>
+                <button type="button" onClick={() => formatDoc('formatBlock', 'h2')} style={toolbarBtnStyle} onMouseOver={(e) => e.target.style.background = '#c29d2f'} onMouseOut={(e) => e.target.style.background = 'none'} title="Başlık">H2</button>
+                <button type="button" onClick={() => formatDoc('formatBlock', 'h3')} style={toolbarBtnStyle} onMouseOver={(e) => e.target.style.background = '#c29d2f'} onMouseOut={(e) => e.target.style.background = 'none'} title="Alt Başlık">H3</button>
+                <button type="button" onClick={() => formatDoc('formatBlock', 'p')} style={toolbarBtnStyle} onMouseOver={(e) => e.target.style.background = '#c29d2f'} onMouseOut={(e) => e.target.style.background = 'none'} title="Paragraf">P</button>
+                <span style={{width:'1px', background:'#0a0a0a', margin:'0 8px'}}></span>
+                <button type="button" onClick={() => formatDoc('insertUnorderedList')} style={toolbarBtnStyle} onMouseOver={(e) => e.target.style.background = '#c29d2f'} onMouseOut={(e) => e.target.style.background = 'none'} title="Madde Listesi">List</button>
+                <button type="button" onClick={() => formatDoc('formatBlock', 'blockquote')} style={toolbarBtnStyle} onMouseOver={(e) => e.target.style.background = '#c29d2f'} onMouseOut={(e) => e.target.style.background = 'none'} title="Alıntı">❝</button>
               </div>
 
               {/* EDITÖR */}
@@ -455,55 +400,37 @@ const CreatePost = () => {
                 ref={editorRef}
                 contentEditable
                 style={{
-                  minHeight: '400px',
-                  padding: '25px',
-                  background: '#fff',
+                  minHeight: '450px', // Daha fazla çalışma alanı
+                  padding: '30px',
+                  background: '#fff', // Beyaz kağıt hissi
                   color: '#000',
                   outline: 'none',
                   fontFamily: 'Georgia, serif',
                   fontSize: '1.1rem',
                   lineHeight: '1.8',
-                  overflowY: 'auto'
+                  overflowY: 'auto',
+                  // placeholder özelliği için CSS gerekiyor, inline olmadığı için şimdilik atlıyoruz.
                 }}
-                placeholder="Yazınızı buraya yazın..."
               ></div>
             </div>
           </div>
 
-          {/* HATA MESAJI */}
-          {error && (
+          {/* HATA VE BAŞARI MESAJI */}
+          {(error || success) && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               style={{
-                background: '#ff6b6b20',
-                border: '1px solid #ff6b6b',
-                color: '#ff6b6b',
+                background: error ? '#ff6b6b20' : '#4caf5020',
+                border: `1px solid ${error ? '#ff6b6b' : '#4caf50'}`,
+                color: error ? '#ff6b6b' : '#4caf50',
                 padding: '15px',
-                borderRadius: '8px',
-                fontSize: '0.95rem'
-              }}
-            >
-              {error}
-            </motion.div>
-          )}
-
-          {/* BAŞARI MESAJI */}
-          {success && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                background: '#4caf5020',
-                border: '1px solid #4caf50',
-                color: '#4caf50',
-                padding: '15px',
-                borderRadius: '8px',
+                borderRadius: '5px',
                 fontSize: '0.95rem',
                 textAlign: 'center'
               }}
             >
-              ✅ Yazı başarıyla yayınlandı! Sayfa yenileniyor...
+              {error || success && '✅ Yazı başarıyla yayınlandı! Sayfa yenileniyor...'}
             </motion.div>
           )}
 
@@ -511,29 +438,29 @@ const CreatePost = () => {
           <div style={{ 
             display: 'flex', 
             gap: '15px', 
-            marginTop: '10px' 
+            marginTop: '20px' 
           }}>
             <button
               type="submit"
               disabled={loading}
               style={{
                 flex: 1,
-                padding: '18px',
+                padding: '15px',
                 background: loading ? '#666' : '#d4af37',
                 color: '#000',
                 border: 'none',
                 fontWeight: 'bold',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                fontSize: '1.1rem',
-                borderRadius: '8px',
+                fontSize: '1rem',
+                borderRadius: '3px',
                 transition: 'all 0.3s',
                 textTransform: 'uppercase',
-                letterSpacing: '1px'
+                letterSpacing: '2px'
               }}
               onMouseOver={(e) => !loading && (e.target.style.background = '#c29d2f')}
               onMouseOut={(e) => !loading && (e.target.style.background = '#d4af37')}
             >
-              {loading ? '⏳ Yayınlanıyor...' : '📤 YAYINLA'}
+              {loading ? '⏳ Yayınlanıyor...' : 'Eseri Yayınla'}
             </button>
 
             <button
@@ -541,20 +468,22 @@ const CreatePost = () => {
               onClick={handleClearForm}
               disabled={loading}
               style={{
-                padding: '18px 30px',
-                background: '#333',
-                color: '#fff',
-                border: '1px solid #555',
-                fontWeight: 'bold',
+                padding: '15px 30px',
+                background: 'none', // Arka plan yok
+                color: '#888',
+                border: '1px solid #555', // İnce çerçeve
+                fontWeight: 'normal',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                fontSize: '1rem',
-                borderRadius: '8px',
-                transition: 'all 0.3s'
+                fontSize: '0.9rem',
+                borderRadius: '3px',
+                transition: 'all 0.3s',
+                textTransform: 'uppercase',
+                letterSpacing: '1px'
               }}
-              onMouseOver={(e) => !loading && (e.target.style.background = '#444')}
-              onMouseOut={(e) => !loading && (e.target.style.background = '#333')}
+              onMouseOver={(e) => !loading && (e.target.style.color = '#f0f0e0')}
+              onMouseOut={(e) => !loading && (e.target.style.color = '#888')}
             >
-              🗑️ Temizle
+              Temizle
             </button>
           </div>
 
@@ -562,7 +491,18 @@ const CreatePost = () => {
       </motion.div>
       
       {/* ARŞİV YÖNETİM PANELİ */}
-      <div style={{ marginTop: '60px' }}>
+      <div style={{ marginTop: '80px', padding: '20px 0' }}>
+        <h2 style={{ 
+          fontFamily: '"Times New Roman", serif', 
+          fontSize: '2rem',
+          fontWeight: '300',
+          color: '#f0f0e0',
+          marginBottom: '30px',
+          borderLeft: '4px solid #d4af37',
+          paddingLeft: '15px'
+        }}>
+          Yayınlanmış Eserler Arşivi
+        </h2>
         <PostManager />
       </div>
 
@@ -570,18 +510,5 @@ const CreatePost = () => {
   );
 };
 
-// Toolbar buton stili
-const btnStyle = {
-  background: '#1a1a1a',
-  color: '#fff',
-  border: 'none',
-  padding: '8px 12px',
-  cursor: 'pointer',
-  borderRadius: '4px',
-  fontWeight: 'bold',
-  fontSize: '0.9rem',
-  transition: 'all 0.2s',
-  minWidth: '35px'
-};
 
 export default CreatePost;
