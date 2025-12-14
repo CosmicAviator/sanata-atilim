@@ -9,13 +9,12 @@ import CreatePost from './pages/CreatePost.jsx';
 import AdminAuth from './pages/AdminAuth.jsx';
 import ArticleDetail from './pages/ArticleDetail.jsx';
 
-// Kategori listesi (Emojisiz)
+// Kategori listesi
 const CATEGORIES = ['Hepsi', 'Sinema', 'Mitoloji', 'Edebiyat', 'Sanat']; 
 
-// ✅ Navigation Bar, Hamburger Menü Desteği ile Güncellendi
 function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
   const navigate = useNavigate();
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // Menü durumu
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isMobile = window.innerWidth < 768;
 
   const handleLogout = async () => {
@@ -26,7 +25,7 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
   
   const handleCategoryClick = (cat) => {
     if (onCategoryChange) onCategoryChange(cat);
-    if (isMobile) setIsMenuOpen(false); // Kategori seçilince menüyü kapat
+    if (isMobile) setIsMenuOpen(false);
   };
 
   const navPadding = isMobile ? '20px 20px' : '30px 40px'; 
@@ -82,7 +81,7 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
       {/* Sağ Üst: HAMBURGER veya NORMAL MENU */}
       <div style={{ textAlign: 'right', position: 'relative' }}>
         
-        {/* 🔥 MOBİL: HAMBURGER İKONU */}
+        {/* MOBİL: HAMBURGER İKONU */}
         {isMobile && (
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -95,14 +94,14 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
               padding: '0',
               lineHeight: '1',
               position: 'relative',
-              zIndex: 101, // Menünün her zaman üstte olması için
+              zIndex: 101,
             }}
           >
             {isMenuOpen ? '✕' : '☰'} 
           </button>
         )}
         
-        {/* 🔥 MOBİL VEYA NORMAL MENÜ KAPSAYICISI */}
+        {/* MOBİL VEYA NORMAL MENÜ KAPSAYICISI */}
         <AnimatePresence>
           {(!isMobile || isMenuOpen) && (
             <motion.div
@@ -141,7 +140,6 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
               
               {/* ADMIN MENÜSÜ / GİRİŞ */}
               <div style={{ 
-                // Mobil menüde her zaman tam genişlik
                 width: isMobile ? '100%' : 'auto', 
                 textAlign: 'right' 
               }}>
@@ -266,7 +264,6 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('Hepsi');
   
-  // Mobil uyum hesaplaması (Hero, Nav vb. tüm bileşenlerde kullanılıyor)
   const isMobile = window.innerWidth < 768; 
 
   // Admin session kontrolü (Aynı Kaldı)
@@ -287,8 +284,34 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Yazıları çek (Aynı Kaldı)
-  const fetchPosts = async () => { /* ... */ }; 
+  // 🔥 KRİTİK DÜZELTME: Yazıları çeken fonksiyonun implementasyonu geri getirildi.
+  const fetchPosts = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      let query = supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (selectedCategory !== 'Hepsi') {
+        query = query.eq('category', selectedCategory);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      console.log('✅ App - Yüklenen yazılar:', data?.length || 0);
+      setPosts(data || []);
+    } catch (err) {
+      console.error('❌ Yazıları yükleme hatası:', err.message);
+      setError('Yazılar yüklenirken bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchPosts();
@@ -299,7 +322,6 @@ function App() {
     return isAdmin ? children : <Navigate to="/admin/auth" replace />;
   };
 
-  // Mobil uyum için içerik alanı padding'ini hesapla (App.jsx'teki son halinden alındı)
   const contentPadding = isMobile ? '40px 20px' : '60px 40px'; 
 
   return (
@@ -326,10 +348,18 @@ function App() {
                   margin: '0 auto', 
                   padding: contentPadding, 
                 }}>
-                  {/* ... loading, error, Masonry bileşenleri aynı kaldı ... */}
-                  {loading && (/* ... */ <div/>)}
-                  {error && (/* ... */ <div/>)}
-                  {!loading && !error && posts.length === 0 && (/* ... */ <div/>)}
+                  {loading && (
+                    <div style={{ textAlign: 'center', color: '#888', padding: '50px' }}>Yükleniyor...</div>
+                  )}
+                  {error && (
+                    <div style={{ textAlign: 'center', color: '#f44336', padding: '50px' }}>{error}</div>
+                  )}
+                  
+                  {!loading && !error && posts.length === 0 && (
+                    <div style={{ textAlign: 'center', color: '#888', padding: '50px' }}>
+                      Seçilen kategoride ( **{selectedCategory}** ) yazı bulunmuyor.
+                    </div>
+                  )}
                   
                   {!loading && !error && posts.length > 0 && (
                     <Masonry items={posts} category={selectedCategory} />
@@ -353,11 +383,28 @@ function App() {
             } 
           />
 
-          {/* 404 Sayfası aynı kaldı */}
+          {/* 404 Sayfası */}
           <Route 
             path="*" 
             element={
-              <div style={{/* ... */}}/>
+              <div style={{
+                minHeight: '100vh',
+                background: '#0a0a0a',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                color: '#f0f0e0',
+                textAlign: 'center',
+                padding: '40px',
+                marginTop: '-80px' 
+              }}>
+                <h2 style={{ fontSize: '4rem', fontFamily: '"Times New Roman", serif', marginBottom: '10px', color: '#d4af37' }}>404</h2>
+                <p style={{ fontSize: '1.5rem', marginBottom: '30px' }}>Sayfa Bulunamadı</p>
+                <Link to="/" style={{ color: '#d4af37', textDecoration: 'none', borderBottom: '1px solid #d4af37', paddingBottom: '2px' }}>
+                  ← Ana Sayfaya Dön
+                </Link>
+              </div>
             } 
           />
         </Routes>
