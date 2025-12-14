@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient'; // Supabase'i alıyoruz
 
 import Masonry from './components/Masonry';
 import Hero from './components/Hero';
 
-// Sayfaları import et
+// Sayfaları import et (Uzantıların doğru olduğundan emin ol)
 import ArticleDetail from './pages/ArticleDetail.jsx';
 import CreatePost from './pages/CreatePost.jsx';
 import Contact from './pages/Contact.jsx'; 
@@ -13,7 +13,7 @@ import AdminAuth from './pages/AdminAuth.jsx';
 
 import './App.css';
 
-// --- GÜVENLİK KOMPONENTİ ---
+// --- GÜVENLİK KOMPONENTİ (AuthGuard) ---
 const AuthGuard = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -48,22 +48,33 @@ const AuthGuard = ({ children }) => {
 };
 
 
-// --- ANA SAYFA (YAZI YAZ BUTONU KOŞULLU HALE GETİRİLİYOR) ---
+// --- ANA SAYFA (Home) ---
 const Home = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('HEPSİ');
-  const [session, setSession] = useState(null); // YENİ: Oturum bilgisini tutacağız
+  const [session, setSession] = useState(null); 
+  const navigate = useNavigate(); // Yönlendirme için eklendi
+
+  // --- OTURUM KAPATMA FONKSİYONU ---
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+        alert('Oturumu kapatırken hata oluştu:', error.message);
+    } else {
+        setSession(null); // Local state'i temizle
+        navigate('/'); // Ana sayfaya yönlendir
+    }
+  };
 
   useEffect(() => { 
     fetchPosts(); 
     
-    // YENİ: Oturum Kontrolü
+    // Oturum Kontrolü (Navbar butonu için)
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
 
-    // Oturum değişikliklerini dinle
     const { data: authListener } = supabase.auth.onAuthStateChange(
         (_event, session) => {
             setSession(session);
@@ -76,7 +87,6 @@ const Home = () => {
   }, []);
 
   async function fetchPosts() {
-    // ... (fetchPosts mantığı aynı)
     const { data, error } = await supabase
       .from('posts')
       .select('*')
@@ -84,7 +94,8 @@ const Home = () => {
 
     if (error) console.log('Hata:', error);
     else {
-      const formattedData = data.map(post => ({ ...post, image: post.image_url }));
+      // ÇÖZÜM: image_url'i, Masonry'nin beklediği 'image' anahtarına dönüştürüyoruz.
+      const formattedData = data.map(post => ({ ...post, image: post.image_url })); 
       setPosts(formattedData);
     }
     setLoading(false);
@@ -110,14 +121,21 @@ const Home = () => {
           <li style={navItemStyle}>MANIFESTO</li>
           <li style={navItemStyle}><Link to="/iletisim" style={{color: 'inherit', textDecoration: 'none'}}>İLETİŞİM</Link></li>
           
-          {/* --- GÜVENLİK KONTROLÜ BURADA --- */}
+          {/* --- YAZI YAZ VE ÇIKIŞ YAP KONTROLÜ --- */}
           {session ? (
-            // GİRİŞ YAPILMIŞSA: Yazı Yaz butonu göster
-            <li style={navItemStyle}><Link to="/yeni" style={{color: '#d4af37', textDecoration: 'none', fontWeight:'bold'}}>YAZI YAZ</Link></li> 
+            <>
+              {/* 1. YAZI YAZ BUTONU */}
+              <li style={navItemStyle}><Link to="/yeni" style={{color: '#d4af37', textDecoration: 'none', fontWeight:'bold'}}>YAZI YAZ</Link></li> 
+              
+              {/* 2. OTURUM KAPATMA BUTONU */}
+              <li style={navItemStyle}>
+                  <button onClick={handleLogout} style={logoutButtonStyle}>
+                      ÇIKIŞ YAP
+                  </button>
+              </li>
+            </>
           ) : (
-            // GİRİŞ YAPILMAMIŞSA: Buton gösterilmez, okuyucu görmez.
-            // Ama yine de gizli giriş rotasına link verebiliriz, bu da /gizli-oda'ya yönlendirir
-            <li style={navItemStyle}><Link to="/yeni" style={{color: 'inherit', textDecoration: 'none', display:'none'}}>Giriş</Link></li>
+            null 
           )}
         </ul>
       </nav>
@@ -169,6 +187,19 @@ const Home = () => {
 };
 
 const navItemStyle = { fontFamily: 'sans-serif', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '2px', cursor: 'pointer', color: '#ccc', textShadow: '0 2px 5px rgba(0,0,0,0.8)' };
+
+// Logout butonu için özel stil
+const logoutButtonStyle = {
+    ...navItemStyle,
+    background: 'none',
+    border: '1px solid #f44336', 
+    color: '#f44336', 
+    padding: '5px 10px',
+    borderRadius: '3px',
+    marginLeft: '10px',
+    textShadow: 'none',
+    transition: 'background-color 0.3s, color 0.3s',
+};
 
 
 // --- TRAFİK POLİSİ (App Componenti) ---
