@@ -2,26 +2,23 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient'; // Supabase'i alıyoruz
 
-// Kendi ana sayfa komponentini import etmene gerek yok, çünkü hemen aşağıda tanımlı.
 import Masonry from './components/Masonry';
 import Hero from './components/Hero';
 
 // Sayfaları import et
-import ArticleDetail from './pages/ArticleDetail.jsx'; // Uzantıları ekledim
+import ArticleDetail from './pages/ArticleDetail.jsx';
 import CreatePost from './pages/CreatePost.jsx';
 import Contact from './pages/Contact.jsx'; 
-import AdminAuth from './pages/AdminAuth.jsx'; // Yeni giriş sayfası
+import AdminAuth from './pages/AdminAuth.jsx'; 
 
 import './App.css';
 
 // --- GÜVENLİK KOMPONENTİ ---
-// Kullanıcı giriş yapmamışsa, login sayfasına yönlendirir.
 const AuthGuard = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Oturum bilgisini Supabase'ten dinle
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, currentSession) => {
         setSession(currentSession);
@@ -29,7 +26,6 @@ const AuthGuard = ({ children }) => {
       }
     );
 
-    // İlk yüklemede mevcut oturumu kontrol et
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       setSession(initialSession);
       setLoading(false);
@@ -44,7 +40,6 @@ const AuthGuard = ({ children }) => {
     return <div style={{ color: '#fff', textAlign: 'center', marginTop: '100px' }}>Güvenlik Kontrol Ediliyor...</div>; 
   }
 
-  // Eğer session yoksa (giriş yapılmamışsa), '/gizli-oda'ya yönlendir
   if (!session) {
     return <Navigate to="/gizli-oda" replace />;
   }
@@ -53,15 +48,35 @@ const AuthGuard = ({ children }) => {
 };
 
 
-// --- SENİN ORİJİNAL ANA SAYFA KODUN ---
+// --- ANA SAYFA (YAZI YAZ BUTONU KOŞULLU HALE GETİRİLİYOR) ---
 const Home = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('HEPSİ');
+  const [session, setSession] = useState(null); // YENİ: Oturum bilgisini tutacağız
 
-  useEffect(() => { fetchPosts(); }, []);
+  useEffect(() => { 
+    fetchPosts(); 
+    
+    // YENİ: Oturum Kontrolü
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Oturum değişikliklerini dinle
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+        (_event, session) => {
+            setSession(session);
+        }
+    );
+
+    return () => {
+        authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   async function fetchPosts() {
+    // ... (fetchPosts mantığı aynı)
     const { data, error } = await supabase
       .from('posts')
       .select('*')
@@ -94,8 +109,16 @@ const Home = () => {
           <li style={navItemStyle}><Link to="/" style={{color: 'inherit', textDecoration: 'none'}}>ANASAYFA</Link></li>
           <li style={navItemStyle}>MANIFESTO</li>
           <li style={navItemStyle}><Link to="/iletisim" style={{color: 'inherit', textDecoration: 'none'}}>İLETİŞİM</Link></li>
-          {/* YAZI YAZMA BUTONU (GİRİŞ YAPILMADIYSA GİZLİ ODA'YA GİDER) */}
-          <li style={navItemStyle}><Link to="/yeni" style={{color: '#d4af37', textDecoration: 'none'}}>YAZI YAZ</Link></li> 
+          
+          {/* --- GÜVENLİK KONTROLÜ BURADA --- */}
+          {session ? (
+            // GİRİŞ YAPILMIŞSA: Yazı Yaz butonu göster
+            <li style={navItemStyle}><Link to="/yeni" style={{color: '#d4af37', textDecoration: 'none', fontWeight:'bold'}}>YAZI YAZ</Link></li> 
+          ) : (
+            // GİRİŞ YAPILMAMIŞSA: Buton gösterilmez, okuyucu görmez.
+            // Ama yine de gizli giriş rotasına link verebiliriz, bu da /gizli-oda'ya yönlendirir
+            <li style={navItemStyle}><Link to="/yeni" style={{color: 'inherit', textDecoration: 'none', display:'none'}}>Giriş</Link></li>
+          )}
         </ul>
       </nav>
 

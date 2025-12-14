@@ -2,27 +2,27 @@ import { useState, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+// Yönetim panelini içeri al
+import PostManager from '../components/PostManager'; 
 
 const CreatePost = () => {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Sinema');
   const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
-  const editorRef = useRef(null); // Editör alanını seçmek için
+  const editorRef = useRef(null); 
   const navigate = useNavigate();
 
   // --- TOOLBAR FONKSİYONLARI ---
-  // Bu fonksiyonlar tarayıcının kendi komutlarını çalıştırır
   const formatDoc = (cmd, value = null) => {
     document.execCommand(cmd, false, value);
-    editorRef.current.focus(); // İşlemden sonra tekrar yazıya odaklan
+    editorRef.current.focus(); 
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // Editörün içindeki HTML kodunu alıyoruz
     const content = editorRef.current.innerHTML;
 
     let finalImageUrl = '';
@@ -60,19 +60,29 @@ const CreatePost = () => {
     if (error) {
       alert('Hata: ' + error.message);
     } else {
-      navigate('/');
+      alert('Yazı başarıyla yayınlandı!');
+      // Formu ve editörü temizle
+      setTitle('');
+      setImageFile(null);
+      editorRef.current.innerHTML = '';
+      // Yönlendirme yapma, sayfayı tekrar yükle (Yönetim panelini güncellesin)
+      window.location.reload(); 
     }
     setLoading(false);
   };
 
   return (
     <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto', color: '#f0f0e0', minHeight: '100vh' }}>
+      
+      {/* SADECE NAVBAR'DAN ERİŞİLEMEYECEK GÜVENLİK KAPISI */}
+      <h1 style={{color: '#d4af37', fontFamily: '"Times New Roman", serif', textAlign: 'center'}}>YAZAR KONTROL PANELİ</h1>
+      
       <motion.h2 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        style={{ fontFamily: '"Times New Roman", serif', borderBottom: '1px solid #d4af37', paddingBottom: '10px' }}
+        style={{ fontFamily: '"Times New Roman", serif', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '20px' }}
       >
-        Yeni Makale Yaz (Özel Tasarım)
+        Yeni İçerik Oluştur
       </motion.h2>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '30px' }}>
@@ -113,7 +123,6 @@ const CreatePost = () => {
         {/* --- KENDİ YAPTIĞIMIZ TOOLBAR --- */}
         <div style={{ border: '1px solid #333', borderRadius: '5px', overflow: 'hidden' }}>
           
-          {/* Butonlar */}
           <div style={{ background: '#d4af37', padding: '10px', display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
             <button type="button" onClick={() => formatDoc('bold')} style={btnStyle}><b>B</b></button>
             <button type="button" onClick={() => formatDoc('italic')} style={btnStyle}><i>I</i></button>
@@ -126,7 +135,6 @@ const CreatePost = () => {
             <button type="button" onClick={() => formatDoc('formatBlock', 'blockquote')} style={btnStyle}>❝ Alıntı</button>
           </div>
 
-          {/* Yazı Yazma Alanı (ContentEditable) */}
           <div
             ref={editorRef}
             contentEditable
@@ -161,11 +169,14 @@ const CreatePost = () => {
         </button>
 
       </form>
+      
+      {/* --- ARŞİV YÖNETİM PANELİ BURADA --- */}
+      <PostManager />
+
     </div>
   );
 };
 
-// Toolbar Buton Stili
 const btnStyle = {
   background: '#1a1a1a',
   color: '#fff',
