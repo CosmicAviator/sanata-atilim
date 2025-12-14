@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom'; // 🔥 EKLEME: Link import edildi
 
 const PostManager = () => {
   const [posts, setPosts] = useState([]);
@@ -9,7 +10,6 @@ const PostManager = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleting, setDeleting] = useState(null);
 
-  // MOBİL UYUM HESAPLAMASI
   const isMobile = window.innerWidth < 768;
 
   useEffect(() => {
@@ -44,15 +44,12 @@ const PostManager = () => {
     setDeleting(postId);
 
     try {
-      // 1. Post bilgisini al (görsel URL'si için)
       const post = posts.find(p => p.id === postId);
       
-      // 2. Eğer görsel varsa, önce storage'dan sil
+      // 2. Görsel varsa, önce storage'dan sil
       if (post?.image_url) {
         try {
-          // 🔥 KRİTİK DÜZELTME: Dosya yolunu Supabase formatına uygun çıkar
-          // URL yapısı: .../storage/v1/object/public/blog-images/dosya_adı
-          // İhtiyacımız olan yol: blog-images/dosya_adı
+          // KRİTİK DÜZELTME: Dosya yolunu Supabase formatına uygun çıkar
           const urlSegments = post.image_url.split('/');
           const filePath = urlSegments.slice(-2).join('/'); 
           
@@ -63,8 +60,7 @@ const PostManager = () => {
             .remove([filePath]);
 
           if (storageError) {
-            // Hata olsa bile DB silmeye devam et, sadece uyarı ver
-            console.warn('⚠️ Görsel silinemedi:', storageError.message);
+            console.warn('⚠️ Görsel silinemedi (DB silme devam ediyor):', storageError.message);
           } else {
             console.log('✅ Görsel silindi');
           }
@@ -99,6 +95,7 @@ const PostManager = () => {
 
   // Loading durumu
   if (loading) {
+    // ... (Loading kısmı aynı kaldı)
     return (
       <div style={{ 
         textAlign: 'center', 
@@ -127,6 +124,7 @@ const PostManager = () => {
 
   // Error durumu
   if (error) {
+    // ... (Error kısmı aynı kaldı)
     return (
       <div style={{ 
         textAlign: 'center', 
@@ -164,10 +162,10 @@ const PostManager = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       style={{
-        maxWidth: '900px', // PostManager'ın maksimum genişliği
+        maxWidth: '900px',
         margin: '0 auto',
         padding: isMobile ? '40px 20px' : '60px 40px',
-        paddingTop: isMobile ? '120px' : '150px' // Navigasyon altından başlaması için
+        paddingTop: isMobile ? '120px' : '150px'
       }}
     >
       {/* Başlık */}
