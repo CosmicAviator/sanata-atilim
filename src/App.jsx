@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
+import { supabase } from './supabaseClient';
 import Navbar from './components/Navbar';
 import Masonry from './components/Masonry';
 import CreatePost from './pages/CreatePost';
