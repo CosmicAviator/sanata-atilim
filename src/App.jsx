@@ -141,7 +141,8 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
               {/* ADMIN MENÜSÜ / GİRİŞ */}
               <div style={{ 
                 width: isMobile ? '100%' : 'auto', 
-                textAlign: 'right' 
+                textAlign: 'right',
+                minHeight: '50px' // Yer tutması için (Admin yoksa bile)
               }}>
                 
                 {isAdmin ? (
@@ -188,27 +189,8 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
                     </button>
                   </motion.div>
                 ) : (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    style={{ marginBottom: '20px' }}
-                  >
-                    <Link 
-                      to="/admin/auth"
-                      onClick={() => isMobile && setIsMenuOpen(false)}
-                      style={{
-                        color: '#888',
-                        textDecoration: 'none',
-                        fontSize: '0.8rem',
-                        letterSpacing: '2px',
-                        textTransform: 'uppercase',
-                        fontFamily: 'sans-serif',
-                      }}
-                    >
-                      Admin Girişi
-                    </Link>
-                  </motion.div>
+                  // 🔥 KRİTİK DÜZELTME: Admin Girişi linki tamamen kaldırıldı.
+                  null 
                 )}
               </div>
 
@@ -284,7 +266,7 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // 🔥 KRİTİK DÜZELTME: Yazıları çeken fonksiyonun implementasyonu geri getirildi.
+  // Yazıları çeken fonksiyonun implementasyonu
   const fetchPosts = async () => {
     setLoading(true);
     setError(null);
