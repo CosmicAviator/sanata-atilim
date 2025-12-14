@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
-import { supabase } from './supabaseClient'; // Supabase'i alıyoruz
+import { supabase } from './supabaseClient.js'; // Supabase'i alıyoruz
 
-import Masonry from './components/Masonry';
-import Hero from './components/Hero';
+import Masonry from './components/Masonry.jsx';
+import Hero from './components/Hero.jsx';
 
 // Sayfaları import et (Uzantıların doğru olduğundan emin ol)
 import ArticleDetail from './pages/ArticleDetail.jsx';
@@ -55,6 +55,9 @@ const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState('HEPSİ');
   const [session, setSession] = useState(null); 
   const navigate = useNavigate(); // Yönlendirme için eklendi
+  // image_url'i, Masonry'nin beklediği 'image' anahtarına dönüştürüyor
+  const formattedData = data.map(post => ({ ...post, image: post.image_url }));
+  setPosts(formattedData);
 
   // --- OTURUM KAPATMA FONKSİYONU ---
   const handleLogout = async () => {
