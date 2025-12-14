@@ -6,10 +6,10 @@ import PostManager from '../components/PostManager';
 
 // Yeni, sanatsal kategori listesi
 const CATEGORIES = [
-  { value: 'Sinema', label: '🎬 Sinema' },
-  { value: 'Mitoloji', label: '🔱 Mitoloji' },
-  { value: 'Edebiyat', label: '📚 Edebiyat' },
-  { value: 'Sanat', label: '🎨 Sanat' },
+  { value: 'Sinema', label: 'Sinema' },
+  { value: 'Mitoloji', label: 'Mitoloji' },
+  { value: 'Edebiyat', label: 'Edebiyat' },
+  { value: 'Sanat', label: 'Sanat' },
 ];
 
 const CreatePost = () => {
@@ -430,7 +430,7 @@ const CreatePost = () => {
                 textAlign: 'center'
               }}
             >
-              {error || success && '✅ Yazı başarıyla yayınlandı! Sayfa yenileniyor...'}
+              {error || success && ' Yazınız başarıyla yayınlandı! Sayfa yenileniyor...'}
             </motion.div>
           )}
 
@@ -460,7 +460,7 @@ const CreatePost = () => {
               onMouseOver={(e) => !loading && (e.target.style.background = '#c29d2f')}
               onMouseOut={(e) => !loading && (e.target.style.background = '#d4af37')}
             >
-              {loading ? '⏳ Yayınlanıyor...' : 'Eseri Yayınla'}
+              {loading ? ' Yayınlanıyor...' : 'Eseri Yayınla'}
             </button>
 
             <button
