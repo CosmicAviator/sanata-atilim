@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-// 🔥 YENİ: TinyMCE Editör kütüphanesi
+// TinyMCE Editör kütüphanesi
 import { Editor } from '@tinymce/tinymce-react';
 
 // KATEGORİLER Tanımı
@@ -22,7 +22,7 @@ const CreatePost = ({ onPostCreated }) => {
   const isMobile = window.innerWidth < 768;
   const categories = useMemo(() => CATEGORIES.slice(1), []); 
 
-  // --- Görsel Yükleme Fonksiyonu (Aynı Kaldı) ---
+  // --- Görsel Yükleme Fonksiyonu ---
   const uploadImage = async (selectedFile) => {
     setUploading(true);
     const fileName = `${Date.now()}-${selectedFile.name}`;
@@ -57,6 +57,7 @@ const CreatePost = ({ onPostCreated }) => {
     const currentContent = editorRef.current ? editorRef.current.getContent() : content;
     
     // İçerik boş mu kontrol et (HTML etiketleri hariç)
+    // Trim yaparak boşlukları kontrol etmek önemlidir.
     if (!title || !currentContent || currentContent.trim() === '' || category === 'Hepsi') {
       setError('Lütfen tüm zorunlu alanları doldurun ve geçerli bir kategori seçin.');
       return;
@@ -80,7 +81,7 @@ const CreatePost = ({ onPostCreated }) => {
         .from('posts')
         .insert({
           title,
-          content: currentContent, // 🔥 Editörden alınan içeriği kaydet
+          content: currentContent, // Editörden alınan içeriği kaydet
           category,
           image_url: imageUrl,
         });
@@ -153,7 +154,7 @@ const CreatePost = ({ onPostCreated }) => {
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
         
-        {/* Başlık Alanı (Aynı Kaldı) */}
+        {/* Başlık Alanı */}
         <div style={{ marginBottom: '25px' }}>
           <label style={labelStyle}>
             Yazı Başlığı (Zorunlu)
@@ -167,7 +168,7 @@ const CreatePost = ({ onPostCreated }) => {
           />
         </div>
 
-        {/* Kategori ve Görsel Yükleme Bölümü (Aynı Kaldı) */}
+        {/* Kategori ve Görsel Yükleme Bölümü */}
         <div style={{ 
           display: 'flex', 
           gap: isMobile ? '0' : '20px', 
@@ -205,14 +206,14 @@ const CreatePost = ({ onPostCreated }) => {
           </div>
         </div>
         
-        {/* 🔥 YENİ: TinyMCE Editör Alanı */}
+        {/* YENİ: TinyMCE Editör Alanı */}
         <div style={{ marginBottom: '30px' }}>
           <label style={labelStyle}>
             İçerik (Zorunlu)
           </label>
           <Editor
-            // API key'iniz varsa buraya ekleyin, yoksa deneme modunda çalışır
-            apiKey='no-api-key' 
+            // 🔥 API KEY BURAYA EKLENDİ
+            apiKey='bmre3q5irc160i7853to8ird2o19hsq1rbimvs30ftbdb8ou' 
             onInit={(evt, editor) => editorRef.current = editor}
             initialValue={content}
             init={{
@@ -240,7 +241,7 @@ const CreatePost = ({ onPostCreated }) => {
           />
         </div>
 
-        {/* Yayınla Butonu (Aynı Kaldı) */}
+        {/* Yayınla Butonu */}
         <button
           type="submit"
           disabled={submitting || uploading}
