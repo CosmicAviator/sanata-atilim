@@ -1,107 +1,441 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
-import { motion } from 'framer-motion';
+import { supabase } from '../supabaseClient'; // ✅ Düzeltme: supabaseClient yerine lib/supabase
+import { motion, AnimatePresence } from 'framer-motion';
 
 const PostManager = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // ✅ İki aşamalı silme onayı
+  const [deleting, setDeleting] = useState(null); // Hangi post siliniyor
 
   useEffect(() => {
     fetchPosts();
   }, []);
 
+  // Yazıları çek
   async function fetchPosts() {
     setLoading(true);
-    // Tüm yazıları getir (Admin olduğu için tümüne erişebilir)
-    const { data, error } = await supabase
-      .from('posts')
-      .select('id, title, category, created_at') // Sadece gerekli alanları getir
-      .order('created_at', { ascending: false });
-
-    if (error) console.error('Yazılar getirilirken hata:', error);
-    else setPosts(data);
-    
-    setLoading(false);
-  }
-
-  const handleDelete = async (postId, title) => {
-    // Silme onayı al
-    const confirmDelete = window.confirm(`"${title}" başlıklı yazıyı gerçekten silmek istiyor musunuz? Bu işlem geri alınamaz!`);
-    
-    if (!confirmDelete) return; // Kullanıcı iptal ettiyse çık
+    setError(null);
 
     try {
-      // Supabase'den yazıyı sil
-      const { error } = await supabase
+      const { data, error } = await supabase
+        .from('posts')
+        .select('id, title, category, created_at, image_url') // ✅ image_url eklendi
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      console.log('✅ PostManager - Yüklenen yazılar:', data?.length || 0);
+      setPosts(data || []);
+    } catch (err) {
+      console.error('❌ PostManager - Hata:', err.message);
+      setError('Yazılar yüklenirken bir hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ✅ İYİLEŞTİRİLMİŞ: Yazı silme (görsel dahil)
+  const handleDelete = async (postId, title) => {
+    setDeleting(postId);
+
+    try {
+      // 1. Post bilgisini al (görsel URL'si için)
+      const post = posts.find(p => p.id === postId);
+      
+      // 2. Eğer görsel varsa, önce storage'dan sil
+      if (post?.image_url) {
+        try {
+          // URL'den dosya yolunu çıkar
+          const urlParts = post.image_url.split('/');
+          const fileName = urlParts[urlParts.length - 1];
+          const filePath = `blog-images/${fileName}`;
+
+          console.log('🗑️ Görsel siliniyor:', filePath);
+
+          const { error: storageError } = await supabase.storage
+            .from('blog-images')
+            .remove([filePath]);
+
+          if (storageError) {
+            console.warn('⚠️ Görsel silinemedi:', storageError.message);
+            // Storage hatası critical değil, devam et
+          } else {
+            console.log('✅ Görsel silindi');
+          }
+        } catch (storageErr) {
+          console.warn('⚠️ Storage silme hatası:', storageErr.message);
+          // Devam et
+        }
+      }
+
+      // 3. Veritabanından sil
+      console.log('🗑️ Veritabanından siliniyor:', postId);
+
+      const { error: dbError } = await supabase
         .from('posts')
         .delete()
         .eq('id', postId);
 
-      if (error) {
-        throw error;
-      }
+      if (dbError) throw dbError;
 
-      // Başarılıysa, listeden kaldır ve kullanıcıya bildir
+      // 4. State'ten kaldır
       setPosts(posts.filter(post => post.id !== postId));
-      alert(`"${title}" başlıklı yazı başarıyla silindi.`);
+      setDeleteConfirm(null);
+      
+      console.log('✅ Yazı başarıyla silindi');
 
-    } catch (error) {
-      alert('Yazı silinirken hata oluştu: ' + error.message);
+      // Başarı bildirimi (opsiyonel)
+      // alert(`"${title}" başlıklı yazı başarıyla silindi.`);
+
+    } catch (err) {
+      console.error('❌ Silme hatası:', err);
+      alert('Yazı silinirken bir hata oluştu: ' + err.message);
+    } finally {
+      setDeleting(null);
     }
   };
 
+  // Loading durumu
   if (loading) {
-    return <div style={{ color: '#ccc', textAlign: 'center', marginTop: '20px' }}>Arşiv yükleniyor...</div>;
+    return (
+      <div style={{ 
+        textAlign: 'center', 
+        marginTop: '40px',
+        color: '#ccc' 
+      }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          border: '3px solid rgba(212, 175, 55, 0.3)',
+          borderTop: '3px solid #d4af37',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          margin: '0 auto 15px'
+        }}></div>
+        <p>Arşiv yükleniyor...</p>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Error durumu
+  if (error) {
+    return (
+      <div style={{ 
+        textAlign: 'center', 
+        marginTop: '40px',
+        color: '#ff6b6b',
+        padding: '20px',
+        background: '#ff6b6b20',
+        borderRadius: '8px',
+        border: '1px solid #ff6b6b'
+      }}>
+        <p style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>😔 Bir Hata Oluştu</p>
+        <p style={{ fontSize: '0.9rem', marginTop: '10px' }}>{error}</p>
+        <button 
+          onClick={fetchPosts}
+          style={{
+            marginTop: '15px',
+            padding: '10px 20px',
+            background: '#ff6b6b',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          🔄 Tekrar Dene
+        </button>
+      </div>
+    );
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <h3 style={{ fontFamily: '"Times New Roman", serif', borderBottom: '1px solid #d4af37', paddingBottom: '10px', marginTop: '40px', fontSize: '1.8rem' }}>
-        Tüm Yazılar ({posts.length})
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }} 
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Başlık */}
+      <h3 style={{ 
+        fontFamily: '"Times New Roman", serif', 
+        borderBottom: '2px solid #d4af37', 
+        paddingBottom: '10px', 
+        marginTop: '40px', 
+        fontSize: '1.8rem',
+        color: '#d4af37',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      }}>
+        <span>📚 Tüm Yazılar ({posts.length})</span>
+        
+        {/* Yenile Butonu */}
+        <button
+          onClick={fetchPosts}
+          style={{
+            background: 'none',
+            border: '1px solid #d4af37',
+            color: '#d4af37',
+            padding: '8px 15px',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            fontWeight: 'normal',
+            transition: 'all 0.3s'
+          }}
+          onMouseOver={(e) => {
+            e.target.style.background = '#d4af37';
+            e.target.style.color = '#000';
+          }}
+          onMouseOut={(e) => {
+            e.target.style.background = 'none';
+            e.target.style.color = '#d4af37';
+          }}
+        >
+          🔄 Yenile
+        </button>
       </h3>
-      
+
+      {/* Boş durum */}
       {posts.length === 0 ? (
-        <p style={{color: '#888', marginTop: '20px'}}>Henüz arşivde yazı bulunmuyor.</p>
+        <div style={{
+          textAlign: 'center',
+          padding: '60px 20px',
+          color: '#888',
+          background: '#1a1a1a',
+          borderRadius: '8px',
+          marginTop: '20px',
+          border: '1px dashed #333'
+        }}>
+          <p style={{ fontSize: '3rem', marginBottom: '15px' }}>📝</p>
+          <p style={{ fontSize: '1.2rem', marginBottom: '10px' }}>Henüz arşivde yazı bulunmuyor</p>
+          <p style={{ fontSize: '0.9rem', color: '#666' }}>İlk yazınızı oluşturun!</p>
+        </div>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {posts.map(post => (
-            <li 
-              key={post.id} 
-              style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                padding: '15px', 
-                borderBottom: '1px solid #333'
-              }}
-            >
-              <div style={{ flexGrow: 1 }}>
-                <strong style={{ color: '#fff' }}>{post.title}</strong>
-                <span style={{ color: '#d4af37', marginLeft: '10px', fontSize: '0.9rem' }}>[{post.category}]</span>
-                <span style={{ color: '#888', marginLeft: '10px', fontSize: '0.8rem' }}>
-                  {new Date(post.created_at).toLocaleDateString('tr-TR')}
-                </span>
-              </div>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleDelete(post.id, post.title)}
+        // Yazı listesi
+        <ul style={{ 
+          listStyle: 'none', 
+          padding: 0,
+          marginTop: '20px'
+        }}>
+          <AnimatePresence>
+            {posts.map((post) => (
+              <motion.li
+                key={post.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
                 style={{
-                  background: 'none',
-                  border: '1px solid #f44336',
-                  color: '#f44336',
-                  padding: '5px 10px',
-                  borderRadius: '3px',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem'
+                  display: 'flex',
+                  gap: '15px',
+                  alignItems: 'center',
+                  padding: '15px',
+                  background: '#1a1a1a',
+                  borderRadius: '8px',
+                  marginBottom: '10px',
+                  border: '1px solid #333',
+                  transition: 'all 0.3s'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = '#222';
+                  e.currentTarget.style.borderColor = '#d4af37';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = '#1a1a1a';
+                  e.currentTarget.style.borderColor = '#333';
                 }}
               >
-                Sil
-              </motion.button>
-            </li>
-          ))}
+                {/* Thumbnail (varsa) */}
+                {post.image_url && (
+                  <div style={{
+                    width: '80px',
+                    height: '80px',
+                    flexShrink: 0,
+                    borderRadius: '5px',
+                    overflow: 'hidden',
+                    background: '#0d0d0d'
+                  }}>
+                    <img
+                      src={post.image_url}
+                      alt={post.title}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* İçerik Bilgileri */}
+                <div style={{ flexGrow: 1, minWidth: 0 }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    marginBottom: '5px'
+                  }}>
+                    <strong style={{ 
+                      color: '#fff',
+                      fontSize: '1.1rem',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {post.title}
+                    </strong>
+                  </div>
+                  
+                  <div style={{
+                    display: 'flex',
+                    gap: '15px',
+                    fontSize: '0.85rem'
+                  }}>
+                    {/* Kategori Badge */}
+                    <span style={{
+                      color: '#d4af37',
+                      background: '#d4af3720',
+                      padding: '2px 8px',
+                      borderRadius: '3px',
+                      fontWeight: '600'
+                    }}>
+                      {post.category}
+                    </span>
+
+                    {/* Tarih */}
+                    <span style={{ color: '#888' }}>
+                      📅 {new Date(post.created_at).toLocaleDateString('tr-TR', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Silme Butonu */}
+                <div style={{ flexShrink: 0 }}>
+                  {deleteConfirm === post.id ? (
+                    // İki aşamalı onay
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleDelete(post.id, post.title)}
+                        disabled={deleting === post.id}
+                        style={{
+                          background: '#f44336',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '8px 15px',
+                          borderRadius: '5px',
+                          cursor: deleting === post.id ? 'not-allowed' : 'pointer',
+                          fontSize: '0.85rem',
+                          fontWeight: 'bold',
+                          opacity: deleting === post.id ? 0.6 : 1
+                        }}
+                      >
+                        {deleting === post.id ? '⏳' : '✓ Eminim'}
+                      </motion.button>
+                      
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setDeleteConfirm(null)}
+                        disabled={deleting === post.id}
+                        style={{
+                          background: '#333',
+                          color: '#fff',
+                          border: '1px solid #555',
+                          padding: '8px 15px',
+                          borderRadius: '5px',
+                          cursor: deleting === post.id ? 'not-allowed' : 'pointer',
+                          fontSize: '0.85rem',
+                          opacity: deleting === post.id ? 0.6 : 1
+                        }}
+                      >
+                        İptal
+                      </motion.button>
+                    </div>
+                  ) : (
+                    // İlk silme butonu
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setDeleteConfirm(post.id)}
+                      style={{
+                        background: 'none',
+                        border: '1px solid #f44336',
+                        color: '#f44336',
+                        padding: '8px 15px',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                        fontWeight: 'bold',
+                        transition: 'all 0.3s'
+                      }}
+                      onMouseOver={(e) => {
+                        e.target.style.background = '#f44336';
+                        e.target.style.color = '#fff';
+                      }}
+                      onMouseOut={(e) => {
+                        e.target.style.background = 'none';
+                        e.target.style.color = '#f44336';
+                      }}
+                    >
+                      🗑️ Sil
+                    </motion.button>
+                  )}
+                </div>
+              </motion.li>
+            ))}
+          </AnimatePresence>
         </ul>
+      )}
+
+      {/* İstatistikler (opsiyonel) */}
+      {posts.length > 0 && (
+        <div style={{
+          marginTop: '20px',
+          padding: '15px',
+          background: '#1a1a1a',
+          borderRadius: '8px',
+          border: '1px solid #333',
+          display: 'flex',
+          gap: '30px',
+          justifyContent: 'center',
+          fontSize: '0.9rem',
+          color: '#888'
+        }}>
+          <div>
+            <span style={{ color: '#d4af37', fontWeight: 'bold' }}>Toplam:</span> {posts.length} yazı
+          </div>
+          <div>
+            <span style={{ color: '#d4af37', fontWeight: 'bold' }}>Sinema:</span>{' '}
+            {posts.filter(p => p.category === 'Sinema').length}
+          </div>
+          <div>
+            <span style={{ color: '#d4af37', fontWeight: 'bold' }}>Edebiyat:</span>{' '}
+            {posts.filter(p => p.category === 'Edebiyat').length}
+          </div>
+          <div>
+            <span style={{ color: '#d4af37', fontWeight: 'bold' }}>Felsefe:</span>{' '}
+            {posts.filter(p => p.category === 'Felsefe').length}
+          </div>
+        </div>
       )}
     </motion.div>
   );
