@@ -1,14 +1,17 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+// 🔥 YENİ: TinyMCE Editör kütüphanesi
+import { Editor } from '@tinymce/tinymce-react';
 
 // KATEGORİLER Tanımı
 const CATEGORIES = ['Hepsi', 'Sinema', 'Mitoloji', 'Edebiyat', 'Sanat']; 
 
 const CreatePost = ({ onPostCreated }) => {
+  const editorRef = useRef(null); // Editör örneğine erişim için
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(''); // TinyMCE içeriğini tutacak
   const [category, setCategory] = useState(CATEGORIES[1]);
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -19,7 +22,7 @@ const CreatePost = ({ onPostCreated }) => {
   const isMobile = window.innerWidth < 768;
   const categories = useMemo(() => CATEGORIES.slice(1), []); 
 
-  // --- Görsel Yükleme Fonksiyonu ---
+  // --- Görsel Yükleme Fonksiyonu (Aynı Kaldı) ---
   const uploadImage = async (selectedFile) => {
     setUploading(true);
     const fileName = `${Date.now()}-${selectedFile.name}`;
@@ -49,8 +52,12 @@ const CreatePost = ({ onPostCreated }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!title || !content || category === 'Hepsi') {
+    
+    // TinyMCE'den güncel HTML içeriğini al
+    const currentContent = editorRef.current ? editorRef.current.getContent() : content;
+    
+    // İçerik boş mu kontrol et (HTML etiketleri hariç)
+    if (!title || !currentContent || currentContent.trim() === '' || category === 'Hepsi') {
       setError('Lütfen tüm zorunlu alanları doldurun ve geçerli bir kategori seçin.');
       return;
     }
@@ -73,10 +80,9 @@ const CreatePost = ({ onPostCreated }) => {
         .from('posts')
         .insert({
           title,
-          content,
+          content: currentContent, // 🔥 Editörden alınan içeriği kaydet
           category,
           image_url: imageUrl,
-          // 🔥 Yazar bilgisi sütunları artık YOK.
         });
 
       if (dbError) throw dbError;
@@ -92,7 +98,7 @@ const CreatePost = ({ onPostCreated }) => {
     }
   };
 
-  // --- Style Tanımları (Tekrarlanan stiller) ---
+  // --- Style Tanımları (Aynı kaldı) ---
   const inputStyle = {
     width: '100%',
     padding: '12px 15px',
@@ -147,7 +153,7 @@ const CreatePost = ({ onPostCreated }) => {
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
         
-        {/* Başlık Alanı */}
+        {/* Başlık Alanı (Aynı Kaldı) */}
         <div style={{ marginBottom: '25px' }}>
           <label style={labelStyle}>
             Yazı Başlığı (Zorunlu)
@@ -161,7 +167,7 @@ const CreatePost = ({ onPostCreated }) => {
           />
         </div>
 
-        {/* Kategori ve Görsel Yükleme Bölümü */}
+        {/* Kategori ve Görsel Yükleme Bölümü (Aynı Kaldı) */}
         <div style={{ 
           display: 'flex', 
           gap: isMobile ? '0' : '20px', 
@@ -199,23 +205,42 @@ const CreatePost = ({ onPostCreated }) => {
           </div>
         </div>
         
-        {/* Yazar Bilgisi Alanı artık YOK. */}
-
-        {/* İçerik Alanı (Textarea) */}
+        {/* 🔥 YENİ: TinyMCE Editör Alanı */}
         <div style={{ marginBottom: '30px' }}>
           <label style={labelStyle}>
-            İçerik (HTML İçerebilir) (Zorunlu)
+            İçerik (Zorunlu)
           </label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Buraya makalenin HTML içeriğini yapıştırın..."
-            rows="15"
-            style={{...inputStyle, resize: 'vertical', fontFamily: 'monospace', lineHeight: 1.5}}
+          <Editor
+            // API key'iniz varsa buraya ekleyin, yoksa deneme modunda çalışır
+            apiKey='no-api-key' 
+            onInit={(evt, editor) => editorRef.current = editor}
+            initialValue={content}
+            init={{
+              height: 500,
+              menubar: false,
+              plugins: [
+                'advlist autolink lists link image charmap print preview anchor',
+                'searchreplace visualblocks code fullscreen',
+                'insertdatetime media table paste code help wordcount'
+              ],
+              toolbar: 'undo redo | formatselect | ' +
+                       'bold italic forecolor backcolor | alignleft aligncenter ' +
+                       'alignright alignjustify | bullist numlist outdent indent | ' +
+                       'removeformat | code | help',
+              
+              // Dark Mode/Koyu Tema Ayarları
+              skin: 'oxide-dark',
+              content_css: 'dark',
+              content_style: 'body { font-family: sans-serif; background: #0a0a0a; color: #f0f0e0; font-size: 16px; margin: 15px; }',
+              
+              // Editörün kenarlığını mevcut sitenizin stiline uydurma
+              border: '1px solid #333',
+              borderRadius: '5px',
+            }}
           />
         </div>
 
-        {/* Yayınla Butonu */}
+        {/* Yayınla Butonu (Aynı Kaldı) */}
         <button
           type="submit"
           disabled={submitting || uploading}
