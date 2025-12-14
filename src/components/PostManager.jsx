@@ -9,7 +9,7 @@ const PostManager = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleting, setDeleting] = useState(null);
 
-  // 🔥 MOBİL UYUM HESAPLAMASI
+  // MOBİL UYUM HESAPLAMASI
   const isMobile = window.innerWidth < 768;
 
   useEffect(() => {
@@ -40,7 +40,7 @@ const PostManager = () => {
   }
 
   // Yazı silme (görsel dahil)
-  const handleDelete = async (postId, title) => {
+  const handleDelete = async (postId) => {
     setDeleting(postId);
 
     try {
@@ -50,12 +50,12 @@ const PostManager = () => {
       // 2. Eğer görsel varsa, önce storage'dan sil
       if (post?.image_url) {
         try {
-          // URL'den dosya yolunu çıkar
-          const urlParts = post.image_url.split('/');
-          const fileName = urlParts[urlParts.length - 1];
-          // blog-images/klasörü altındaki dosya yolunu al
-          const filePath = `blog-images/${fileName}`; 
-
+          // 🔥 KRİTİK DÜZELTME: Dosya yolunu Supabase formatına uygun çıkar
+          // URL yapısı: .../storage/v1/object/public/blog-images/dosya_adı
+          // İhtiyacımız olan yol: blog-images/dosya_adı
+          const urlSegments = post.image_url.split('/');
+          const filePath = urlSegments.slice(-2).join('/'); 
+          
           console.log('🗑️ Görsel siliniyor:', filePath);
 
           const { error: storageError } = await supabase.storage
@@ -63,6 +63,7 @@ const PostManager = () => {
             .remove([filePath]);
 
           if (storageError) {
+            // Hata olsa bile DB silmeye devam et, sadece uyarı ver
             console.warn('⚠️ Görsel silinemedi:', storageError.message);
           } else {
             console.log('✅ Görsel silindi');
@@ -162,6 +163,12 @@ const PostManager = () => {
       initial={{ opacity: 0, y: 20 }} 
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
+      style={{
+        maxWidth: '900px', // PostManager'ın maksimum genişliği
+        margin: '0 auto',
+        padding: isMobile ? '40px 20px' : '60px 40px',
+        paddingTop: isMobile ? '120px' : '150px' // Navigasyon altından başlaması için
+      }}
     >
       {/* Başlık */}
       <h3 style={{ 
@@ -174,7 +181,6 @@ const PostManager = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        // 🔥 MOBİL DÜZELTME: Başlık ve buton mobilde alt alta yığılabilir
         flexDirection: isMobile ? 'column' : 'row',
         textAlign: isMobile ? 'center' : 'left'
       }}>
@@ -193,7 +199,7 @@ const PostManager = () => {
             fontSize: '0.9rem',
             fontWeight: 'normal',
             transition: 'all 0.3s',
-            marginTop: isMobile ? '15px' : '0' // Mobil boşluk
+            marginTop: isMobile ? '15px' : '0' 
           }}
           onMouseOver={(e) => {
             e.target.style.background = '#d4af37';
@@ -208,7 +214,7 @@ const PostManager = () => {
         </button>
       </h3>
 
-      {/* Boş durum aynı kaldı */}
+      {/* Boş durum */}
       {posts.length === 0 ? (
         <div style={{
           textAlign: 'center',
@@ -240,7 +246,6 @@ const PostManager = () => {
                 transition={{ duration: 0.3 }}
                 style={{
                   display: 'flex',
-                  // 🔥 MOBİL DÜZELTME: Telefonlarda dikey listeleme
                   flexDirection: isMobile ? 'column' : 'row', 
                   gap: '15px',
                   alignItems: isMobile ? 'flex-start' : 'center',
@@ -262,34 +267,38 @@ const PostManager = () => {
               >
                 {/* Thumbnail (varsa) */}
                 {post.image_url && (
-                  <div style={{
-                    width: isMobile ? '100%' : '80px', // Mobil cihazda tam genişlik
-                    height: isMobile ? '150px' : '80px',
-                    flexShrink: 0,
-                    borderRadius: '5px',
-                    overflow: 'hidden',
-                    background: '#0d0d0d'
-                  }}>
-                    <img
-                      src={post.image_url}
-                      alt={post.title}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                      }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  </div>
+                  <Link to={`/yazi/${post.id}`} style={{ textDecoration: 'none' }}>
+                    <div style={{
+                      width: isMobile ? '100%' : '80px', 
+                      height: isMobile ? '150px' : '80px',
+                      flexShrink: 0,
+                      borderRadius: '5px',
+                      overflow: 'hidden',
+                      background: '#0d0d0d'
+                    }}>
+                      <img
+                        src={post.image_url}
+                        alt={post.title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          transition: 'transform 0.3s'
+                        }}
+                        onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+                        onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  </Link>
                 )}
 
                 {/* İçerik Bilgileri */}
                 <div style={{ 
                   flexGrow: 1, 
                   minWidth: 0,
-                  // 🔥 MOBİL DÜZELTME: Başlık ve butondan ayırmak için mobil boşluk
                   marginTop: isMobile ? '10px' : '0' 
                 }}>
                   <div style={{
@@ -298,20 +307,25 @@ const PostManager = () => {
                     gap: '10px',
                     marginBottom: '5px'
                   }}>
-                    <strong style={{ 
-                      color: '#fff',
-                      fontSize: '1.1rem',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: isMobile ? 'normal' : 'nowrap' // Mobil cihazda sarılabilir
-                    }}>
-                      {post.title}
-                    </strong>
+                    <Link to={`/yazi/${post.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                      <strong style={{ 
+                        color: '#fff',
+                        fontSize: '1.1rem',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: isMobile ? 'normal' : 'nowrap',
+                        transition: 'color 0.3s'
+                      }}
+                      onMouseOver={(e) => e.target.style.color = '#d4af37'}
+                      onMouseOut={(e) => e.target.style.color = '#fff'}
+                      >
+                        {post.title}
+                      </strong>
+                    </Link>
                   </div>
                   
                   <div style={{
                     display: 'flex',
-                    // 🔥 MOBİL DÜZELTME: Kategoriler mobil cihazda alt alta yığılır
                     flexDirection: isMobile ? 'column' : 'row', 
                     gap: '10px',
                     fontSize: '0.85rem'
@@ -342,7 +356,6 @@ const PostManager = () => {
                 {/* Silme Butonu */}
                 <div style={{ 
                   flexShrink: 0, 
-                  // 🔥 MOBİL DÜZELTME: Buton sağa hizalanır
                   alignSelf: isMobile ? 'flex-end' : 'center'
                 }}>
                   {deleteConfirm === post.id ? (
@@ -351,7 +364,7 @@ const PostManager = () => {
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => handleDelete(post.id, post.title)}
+                        onClick={() => handleDelete(post.id)} // Sadece ID gönderildi
                         disabled={deleting === post.id}
                         style={{
                           background: '#f44336',
@@ -432,7 +445,6 @@ const PostManager = () => {
           borderRadius: '8px',
           border: '1px solid #333',
           display: 'flex',
-          // 🔥 MOBİL DÜZELTME: Mobil cihazda alt alta yığılır
           flexDirection: isMobile ? 'column' : 'row',
           gap: isMobile ? '10px' : '30px',
           justifyContent: isMobile ? 'flex-start' : 'center',

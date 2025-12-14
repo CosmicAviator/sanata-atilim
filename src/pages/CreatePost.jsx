@@ -3,26 +3,20 @@ import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-// ✅ KRİTİK DÜZELTME: KATEGORİLER BURADA TANIMLI OLMALIDIR
+// KATEGORİLER Tanımı
 const CATEGORIES = ['Hepsi', 'Sinema', 'Mitoloji', 'Edebiyat', 'Sanat']; 
 
 const CreatePost = ({ onPostCreated }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [category, setCategory] = useState(CATEGORIES[1]); // İlk kategoriyi seçili getiriyoruz (Hepsi hariç)
+  const [category, setCategory] = useState(CATEGORIES[1]);
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Yazar bilgileri
-  const [authorName, setAuthorName] = useState('');
-  const [authorStatus, setAuthorStatus] = useState(''); 
-
   const navigate = useNavigate();
   const isMobile = window.innerWidth < 768;
-  
-  // Hepsi hariç kategorileri kullan
   const categories = useMemo(() => CATEGORIES.slice(1), []); 
 
   // --- Görsel Yükleme Fonksiyonu ---
@@ -31,7 +25,7 @@ const CreatePost = ({ onPostCreated }) => {
     const fileName = `${Date.now()}-${selectedFile.name}`;
     try {
       const { data, error } = await supabase.storage
-        .from('blog-images')
+        .from('blog-images') 
         .upload(`blog-images/${fileName}`, selectedFile, {
           cacheControl: '3600',
           upsert: false,
@@ -56,17 +50,10 @@ const CreatePost = ({ onPostCreated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!title || !content || !category) {
-      setError('Lütfen tüm zorunlu alanları doldurun.');
+    if (!title || !content || category === 'Hepsi') {
+      setError('Lütfen tüm zorunlu alanları doldurun ve geçerli bir kategori seçin.');
       return;
     }
-    
-    // Varsayılan kategoriyi seçili tut
-    if (category === 'Hepsi') {
-         setError('Lütfen geçerli bir kategori seçin.');
-         return;
-    }
-
 
     setSubmitting(true);
     setError(null);
@@ -89,13 +76,12 @@ const CreatePost = ({ onPostCreated }) => {
           content,
           category,
           image_url: imageUrl,
-          author_name: authorName || 'Anonim Küratör',
-          author_status: authorStatus || 'Sanata Atılım Topluluğu',
+          // 🔥 Yazar bilgisi sütunları artık YOK.
         });
 
       if (dbError) throw dbError;
 
-      onPostCreated();
+      onPostCreated(); 
       navigate('/'); 
 
     } catch (err) {
@@ -106,12 +92,7 @@ const CreatePost = ({ onPostCreated }) => {
     }
   };
 
-  // --- Style Tanımları (Görünüm tutarlılığı için) ---
-  const formStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-  };
-  
+  // --- Style Tanımları (Tekrarlanan stiller) ---
   const inputStyle = {
     width: '100%',
     padding: '12px 15px',
@@ -125,7 +106,7 @@ const CreatePost = ({ onPostCreated }) => {
     fontFamily: 'sans-serif'
   };
   
-  const labelStyle = {
+  const labelStyle = { 
     display: 'block',
     marginBottom: '5px',
     color: '#ccc',
@@ -164,7 +145,7 @@ const CreatePost = ({ onPostCreated }) => {
         </p>
       )}
 
-      <form onSubmit={handleSubmit} style={formStyle}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
         
         {/* Başlık Alanı */}
         <div style={{ marginBottom: '25px' }}>
@@ -213,48 +194,14 @@ const CreatePost = ({ onPostCreated }) => {
               type="file"
               accept="image/*"
               onChange={(e) => setFile(e.target.files[0])}
-              style={{...inputStyle, padding: '8px 15px'}} // dosya inputu stili
+              style={{...inputStyle, padding: '8px 15px'}}
             />
           </div>
         </div>
+        
+        {/* Yazar Bilgisi Alanı artık YOK. */}
 
-        {/* YAZAR BİLGİLERİ */}
-        <div style={{ 
-          display: 'flex', 
-          gap: isMobile ? '0' : '20px', 
-          marginBottom: '25px',
-          flexDirection: isMobile ? 'column' : 'row'
-        }}>
-          {/* Yazar Adı */}
-          <div style={{ flex: 1, marginBottom: isMobile ? '20px' : '0' }}>
-            <label style={labelStyle}>
-              Yazar Adı (Opsiyonel)
-            </label>
-            <input
-              type="text"
-              value={authorName}
-              onChange={(e) => setAuthorName(e.target.value)}
-              placeholder="Ad Soyad"
-              style={inputStyle}
-            />
-          </div>
-
-          {/* Yazar Statüsü / Bölümü */}
-          <div style={{ flex: 1 }}>
-            <label style={labelStyle}>
-              Bölüm/Statü (Opsiyonel)
-            </label>
-            <input
-              type="text"
-              value={authorStatus}
-              onChange={(e) => setAuthorStatus(e.target.value)}
-              placeholder="Örn: Boğaziçi Felsefe, Topluluk Üyesi"
-              style={inputStyle}
-            />
-          </div>
-        </div>
-
-        {/* İçerik Alanı */}
+        {/* İçerik Alanı (Textarea) */}
         <div style={{ marginBottom: '30px' }}>
           <label style={labelStyle}>
             İçerik (HTML İçerebilir) (Zorunlu)

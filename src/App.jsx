@@ -8,6 +8,8 @@ import Masonry from './components/Masonry.jsx';
 import CreatePost from './pages/CreatePost.jsx';
 import AdminAuth from './pages/AdminAuth.jsx';
 import ArticleDetail from './pages/ArticleDetail.jsx';
+// 🔥 PostManager bileşeni App.jsx'e import edildi
+import PostManager from './components/PostManager.jsx'; 
 
 // Kategori listesi
 const CATEGORIES = ['Hepsi', 'Sinema', 'Mitoloji', 'Edebiyat', 'Sanat']; 
@@ -142,7 +144,7 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
               <div style={{ 
                 width: isMobile ? '100%' : 'auto', 
                 textAlign: 'right',
-                minHeight: '50px' // Yer tutması için (Admin yoksa bile)
+                minHeight: '50px'
               }}>
                 
                 {isAdmin ? (
@@ -157,6 +159,22 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
                       flexDirection: isMobile ? 'column' : 'row'
                     }}
                   >
+                    {/* 🔥 YENİ: ARŞİV YÖNETİM LİNKİ */}
+                    <Link 
+                      to="/admin/manager" 
+                      onClick={() => isMobile && setIsMenuOpen(false)}
+                      style={{
+                        color: '#d4af37',
+                        textDecoration: 'none',
+                        fontSize: '0.9rem',
+                        letterSpacing: '2px',
+                        textTransform: 'uppercase',
+                        fontFamily: 'sans-serif',
+                      }}
+                    >
+                      Arşiv Yönetimi
+                    </Link>
+                    
                     <Link 
                       to="/admin/create"
                       onClick={() => isMobile && setIsMenuOpen(false)}
@@ -189,7 +207,6 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
                     </button>
                   </motion.div>
                 ) : (
-                  // 🔥 KRİTİK DÜZELTME: Admin Girişi linki tamamen kaldırıldı.
                   null 
                 )}
               </div>
@@ -365,6 +382,15 @@ function App() {
             } 
           />
 
+          {/* 🔥 YENİ: POST MANAGER ROTASI */}
+          <Route 
+            path="/admin/manager" 
+            element={
+              <ProtectedRoute>
+                <PostManager /> 
+              </ProtectedRoute>
+            } 
+          />
           {/* 404 Sayfası */}
           <Route 
             path="*" 
