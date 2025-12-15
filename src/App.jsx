@@ -1,18 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import Hero from './components/Hero.jsx';
 import Masonry from './components/Masonry.jsx';
-import CreatePost from './pages/CreatePost.jsx';
-import AdminAuth from './pages/AdminAuth.jsx';
-import ArticleDetail from './pages/ArticleDetail.jsx';
-// 🔥 PostManager bileşeni App.jsx'e import edildi
-import PostManager from './components/PostManager.jsx'; 
+import Footer from './components/Footer.jsx';
+
+// Lazy loaded components for code splitting
+const CreatePost = lazy(() => import('./pages/CreatePost.jsx'));
+const AdminAuth = lazy(() => import('./pages/AdminAuth.jsx'));
+const ArticleDetail = lazy(() => import('./pages/ArticleDetail.jsx'));
+const PostManager = lazy(() => import('./components/PostManager.jsx'));
 
 // Kategori listesi
-const CATEGORIES = ['Hepsi', 'Sinema', 'Mitoloji', 'Edebiyat', 'Sanat']; 
+const CATEGORIES = ['Hepsi', 'Sinema', 'Mitoloji', 'Edebiyat', 'Sanat'];
 
 function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
   const navigate = useNavigate();
@@ -22,15 +24,15 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');
-    window.location.reload(); 
+    window.location.reload();
   };
-  
+
   const handleCategoryClick = (cat) => {
     if (onCategoryChange) onCategoryChange(cat);
     if (isMobile) setIsMenuOpen(false);
   };
 
-  const navPadding = isMobile ? '20px 20px' : '30px 40px'; 
+  const navPadding = isMobile ? '20px 20px' : '30px 40px';
 
   return (
     <nav style={{
@@ -39,7 +41,7 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
       left: 0,
       right: 0,
       zIndex: 100,
-      padding: navPadding, 
+      padding: navPadding,
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
@@ -47,12 +49,12 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
       textShadow: '0 0 8px rgba(0,0,0,0.8)'
     }}>
       {/* Sol Üst: Site İsmi */}
-      <Link 
-        to="/" 
+      <Link
+        to="/"
         onClick={() => handleCategoryClick('Hepsi')}
         style={{ textDecoration: 'none' }}
       >
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
@@ -82,7 +84,7 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
 
       {/* Sağ Üst: HAMBURGER veya NORMAL MENU */}
       <div style={{ textAlign: 'right', position: 'relative' }}>
-        
+
         {/* MOBİL: HAMBURGER İKONU */}
         {isMobile && (
           <button
@@ -99,10 +101,10 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
               zIndex: 101,
             }}
           >
-            {isMenuOpen ? '✕' : '☰'} 
+            {isMenuOpen ? '✕' : '☰'}
           </button>
         )}
-        
+
         {/* MOBİL VEYA NORMAL MENÜ KAPSAYICISI */}
         <AnimatePresence>
           {(!isMobile || isMenuOpen) && (
@@ -115,7 +117,7 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '15px',
-                
+
                 // MOBİL MENÜ STİLİ
                 ...(isMobile && {
                   position: 'fixed',
@@ -130,7 +132,7 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
                   zIndex: 99,
                   overflowY: 'auto'
                 }),
-                
+
                 // MASAÜSTÜ STİLİ
                 ...(!isMobile && {
                   flexDirection: 'row',
@@ -139,29 +141,29 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
                 })
               }}
             >
-              
+
               {/* ADMIN MENÜSÜ / GİRİŞ */}
-              <div style={{ 
-                width: isMobile ? '100%' : 'auto', 
+              <div style={{
+                width: isMobile ? '100%' : 'auto',
                 textAlign: 'right',
                 minHeight: '50px'
               }}>
-                
+
                 {isAdmin ? (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
-                    style={{ 
-                      display: 'flex', 
-                      gap: '15px', 
+                    style={{
+                      display: 'flex',
+                      gap: '15px',
                       marginBottom: '20px',
                       flexDirection: isMobile ? 'column' : 'row'
                     }}
                   >
                     {/* 🔥 YENİ: ARŞİV YÖNETİM LİNKİ */}
-                    <Link 
-                      to="/admin/manager" 
+                    <Link
+                      to="/admin/manager"
                       onClick={() => isMobile && setIsMenuOpen(false)}
                       style={{
                         color: '#d4af37',
@@ -174,8 +176,8 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
                     >
                       Arşiv Yönetimi
                     </Link>
-                    
-                    <Link 
+
+                    <Link
                       to="/admin/create"
                       onClick={() => isMobile && setIsMenuOpen(false)}
                       style={{
@@ -207,19 +209,19 @@ function NavigationBar({ isAdmin, selectedCategory, onCategoryChange }) {
                     </button>
                   </motion.div>
                 ) : (
-                  null 
+                  null
                 )}
               </div>
 
               {/* Kategori Filtreleri (Sadece Ana Sayfada) */}
               {window.location.pathname === '/' && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  style={{ 
-                    display: 'flex', 
-                    gap: '15px', 
+                  style={{
+                    display: 'flex',
+                    gap: '15px',
                     justifyContent: isMobile ? 'flex-start' : 'flex-end',
                     flexDirection: isMobile ? 'column' : 'row'
                   }}
@@ -262,8 +264,8 @@ function App() {
   const [error, setError] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('Hepsi');
-  
-  const isMobile = window.innerWidth < 768; 
+
+  const isMobile = window.innerWidth < 768;
 
   // Admin session kontrolü (Aynı Kaldı)
   useEffect(() => {
@@ -271,7 +273,7 @@ function App() {
       const { data: { session } } = await supabase.auth.getSession();
       setIsAdmin(!!session);
     };
-    
+
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -321,101 +323,109 @@ function App() {
     return isAdmin ? children : <Navigate to="/admin/auth" replace />;
   };
 
-  const contentPadding = isMobile ? '40px 20px' : '60px 40px'; 
+  const contentPadding = isMobile ? '40px 20px' : '60px 40px';
 
   return (
     <Router>
-      <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
+      <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', flexDirection: 'column' }}>
         {/* Navigation - Hamburger menü desteğiyle */}
-        <NavigationBar 
-          isAdmin={isAdmin} 
+        <NavigationBar
+          isAdmin={isAdmin}
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
         />
-        
-        <Routes>
-          {/* Ana Sayfa */}
-          <Route 
-            path="/" 
-            element={
-              <>
-                <Hero />
-                
-                {/* İçerik Alanı */}
-                <div style={{ 
-                  maxWidth: '1200px', 
-                  margin: '0 auto', 
-                  padding: contentPadding, 
+
+        <Suspense fallback={
+          <div style={{ textAlign: 'center', color: '#888', padding: '100px', flex: 1 }}>
+            Yükleniyor...
+          </div>
+        }>
+          <Routes>
+            {/* Ana Sayfa */}
+            <Route
+              path="/"
+              element={
+                <>
+                  <Hero />
+
+                  {/* İçerik Alanı */}
+                  <div style={{
+                    maxWidth: '1200px',
+                    margin: '0 auto',
+                    padding: contentPadding,
+                  }}>
+                    {loading && (
+                      <div style={{ textAlign: 'center', color: '#888', padding: '50px' }}>Yükleniyor...</div>
+                    )}
+                    {error && (
+                      <div style={{ textAlign: 'center', color: '#f44336', padding: '50px' }}>{error}</div>
+                    )}
+
+                    {!loading && !error && posts.length === 0 && (
+                      <div style={{ textAlign: 'center', color: '#888', padding: '50px' }}>
+                        Seçilen kategoride ( **{selectedCategory}** ) yazı bulunmuyor.
+                      </div>
+                    )}
+
+                    {!loading && !error && posts.length > 0 && (
+                      <Masonry items={posts} category={selectedCategory} />
+                    )}
+                  </div>
+
+                  <Footer />
+                </>
+              }
+            />
+
+            <Route path="/admin/auth" element={<AdminAuth />} />
+
+            {/* Yazı Detay Sayfası */}
+            <Route path="/yazi/:id" element={<ArticleDetail />} />
+
+            <Route
+              path="/admin/create"
+              element={
+                <ProtectedRoute>
+                  <CreatePost onPostCreated={fetchPosts} />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 🔥 YENİ: POST MANAGER ROTASI */}
+            <Route
+              path="/admin/manager"
+              element={
+                <ProtectedRoute>
+                  <PostManager />
+                </ProtectedRoute>
+              }
+            />
+            {/* 404 Sayfası */}
+            <Route
+              path="*"
+              element={
+                <div style={{
+                  minHeight: '100vh',
+                  background: '#0a0a0a',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  color: '#f0f0e0',
+                  textAlign: 'center',
+                  padding: '40px',
+                  marginTop: '-80px'
                 }}>
-                  {loading && (
-                    <div style={{ textAlign: 'center', color: '#888', padding: '50px' }}>Yükleniyor...</div>
-                  )}
-                  {error && (
-                    <div style={{ textAlign: 'center', color: '#f44336', padding: '50px' }}>{error}</div>
-                  )}
-                  
-                  {!loading && !error && posts.length === 0 && (
-                    <div style={{ textAlign: 'center', color: '#888', padding: '50px' }}>
-                      Seçilen kategoride ( **{selectedCategory}** ) yazı bulunmuyor.
-                    </div>
-                  )}
-                  
-                  {!loading && !error && posts.length > 0 && (
-                    <Masonry items={posts} category={selectedCategory} />
-                  )}
+                  <h2 style={{ fontSize: '4rem', fontFamily: '"Times New Roman", serif', marginBottom: '10px', color: '#d4af37' }}>404</h2>
+                  <p style={{ fontSize: '1.5rem', marginBottom: '30px' }}>Sayfa Bulunamadı</p>
+                  <Link to="/" style={{ color: '#d4af37', textDecoration: 'none', borderBottom: '1px solid #d4af37', paddingBottom: '2px' }}>
+                    ← Ana Sayfaya Dön
+                  </Link>
                 </div>
-              </>
-            } 
-          />
-
-          <Route path="/admin/auth" element={<AdminAuth />} />
-
-          {/* Yazı Detay Sayfası */}
-          <Route path="/yazi/:id" element={<ArticleDetail />} />
-
-          <Route 
-            path="/admin/create" 
-            element={
-              <ProtectedRoute>
-                <CreatePost onPostCreated={fetchPosts} />
-              </ProtectedRoute>
-            } 
-          />
-
-          {/* 🔥 YENİ: POST MANAGER ROTASI */}
-          <Route 
-            path="/admin/manager" 
-            element={
-              <ProtectedRoute>
-                <PostManager /> 
-              </ProtectedRoute>
-            } 
-          />
-          {/* 404 Sayfası */}
-          <Route 
-            path="*" 
-            element={
-              <div style={{
-                minHeight: '100vh',
-                background: '#0a0a0a',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                color: '#f0f0e0',
-                textAlign: 'center',
-                padding: '40px',
-                marginTop: '-80px' 
-              }}>
-                <h2 style={{ fontSize: '4rem', fontFamily: '"Times New Roman", serif', marginBottom: '10px', color: '#d4af37' }}>404</h2>
-                <p style={{ fontSize: '1.5rem', marginBottom: '30px' }}>Sayfa Bulunamadı</p>
-                <Link to="/" style={{ color: '#d4af37', textDecoration: 'none', borderBottom: '1px solid #d4af37', paddingBottom: '2px' }}>
-                  ← Ana Sayfaya Dön
-                </Link>
-              </div>
-            } 
-          />
-        </Routes>
+              }
+            />
+          </Routes>
+        </Suspense>
       </div>
     </Router>
   );

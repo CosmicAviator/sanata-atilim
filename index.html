@@ -1,23 +1,57 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sanata Atılım</title>
+<html lang="tr">
 
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EJHKH76E3Q"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-      gtag('config', 'G-EJHKH76E3Q');
-    </script>
-    
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+  <title>Sanata Atılım | Kütüphane Topluluğu</title>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description"
+    content="Sanata Atılım, sinema, mitoloji, edebiyat ve sanat üzerine derinlemesine yazılar sunan bir kütüphane topluluğudur." />
+  <meta name="keywords" content="sanat, sinema, mitoloji, edebiyat, kültür, Türkçe blog, sanat tarihi" />
+  <meta name="author" content="Sanata Atılım" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://sanata-atilim.vercel.app/" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sanata-atilim.vercel.app/" />
+  <meta property="og:title" content="Sanata Atılım | Kütüphane Topluluğu" />
+  <meta property="og:description" content="Sinema, mitoloji, edebiyat ve sanat üzerine derinlemesine yazılar." />
+  <meta property="og:image" content="https://sanata-atilim.vercel.app/logo.png" />
+  <meta property="og:locale" content="tr_TR" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://sanata-atilim.vercel.app/" />
+  <meta name="twitter:title" content="Sanata Atılım | Kütüphane Topluluğu" />
+  <meta name="twitter:description" content="Sinema, mitoloji, edebiyat ve sanat üzerine derinlemesine yazılar." />
+  <meta name="twitter:image" content="https://sanata-atilim.vercel.app/logo.png" />
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#0a0a0a" />
+
+  <!-- Preconnect to external APIs for performance -->
+  <link rel="preconnect" href="https://collectionapi.metmuseum.org" />
+  <link rel="preconnect" href="https://injktkwaipqpqupuulqb.supabase.co" />
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-EJHKH76E3Q"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-EJHKH76E3Q');
+  </script>
+
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

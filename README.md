@@ -1,16 +1,54 @@
-# React + Vite
+# Sanata Atılım
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Sanata Atılım, Atılım Üniversitesi Kütüphane Topluluğu'nun sanat, sinema, mitoloji ve edebiyat üzerine yazılar yayımladığı dijital arşividir.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Proje, Metropolitan Museum of Art koleksiyonundan rastgele seçilen klasik eserlerle karşılayan bir ana sayfa, kategori bazlı filtreleme ve modern bir okuma deneyimi sunar.
 
-## React Compiler
+Supabase altyapısı üzerinde çalışan içerik yönetim sistemi, yetkili kullanıcıların makale oluşturmasına ve düzenlemesine olanak tanır.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Kurulum
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Bağımlılıkları yükleyin:
+
+```
+npm install
+```
+
+Ortam değişkenlerini yapılandırın:
+
+```
+cp .env.example .env
+```
+
+Supabase proje bilgilerinizi `.env` dosyasına ekleyin.
+
+Geliştirme sunucusunu başlatın:
+
+```
+npm run dev
+```
+
+---
+
+## Yapı
+
+```
+src/
+  components/   Yeniden kullanılabilir arayüz bileşenleri
+  pages/        Sayfa düzeni bileşenleri
+  supabaseClient.js
+```
+
+---
+
+## Dağıtım
+
+Proje Vercel üzerinde barındırılmaktadır. Ana dala yapılan her commit otomatik olarak dağıtılır.
+
+---
+
+Atılım Üniversitesi Kütüphane Topluluğu
